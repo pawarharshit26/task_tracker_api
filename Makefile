@@ -12,7 +12,7 @@ fmt:
 
 # Run server
 run:
-	@uvicorn app.main:app --reload --port 8001
+	@uvicorn app.main:app --reload --port 8000
 
 # Shortcut for dev workflow: format + run
 dev: 

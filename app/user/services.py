@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException
 from typing import Annotated
 from app.core.jwt import JWT, get_jwt
 from app.core.services import BaseService
-from app.user.repo import UserModel, UserRepo, get_user_repo
+from app.user.repo import UserRepo, UserRepoEntitiy, get_user_repo
 from app.user.schemas import SignupInputSchema, LoginInputSchema, LoginOutputSchema
 
 
@@ -19,19 +19,30 @@ class UserService(BaseService):
     def __init__(self, repo: Annotated[UserRepo, Depends(get_user_repo)]):
         self.user_repo = repo
 
-    def get(self, id: str) -> UserModel:
+    def get(self, id: str) -> UserRepoEntitiy:
         try:
             return self.user_repo.get(id)
         except UserRepo.UserNotFoundException:
             raise self.UserNotFoundException("User not found")
 
-    def get_by_email(self, email: str) -> UserModel:
+    def get_by_email(self, email: str) -> UserRepoEntitiy:
         try:
-            return self.user_repo.get_by_email(email)
+            dbUser = self.user_repo.get_by_email(email)
+
+            return UserRepoEntitiy(
+                id=dbUser.id,
+                name=dbUser.name,
+                email=dbUser.email,
+                password=dbUser.password,
+                created_at=dbUser.created_at,
+                updated_at=dbUser.updated_at,
+                deleted_at=dbUser.deleted_at,
+                is_active=dbUser.is_active,
+            )
         except UserRepo.UserNotFoundException:
             raise self.UserNotFoundException("User not found")
 
-    def create(self, user: SignupInputSchema) -> str:
+    def create(self, user: SignupInputSchema) -> int:
         try:
             return self.user_repo.create(user)
         except UserRepo.UserAlreadyExistsException:
@@ -76,18 +87,18 @@ class AuthService(BaseService):
         except UserService.UserAlreadyExistsException:
             raise self.UserAlreadyExistsException("User already exists")
 
-    def login(self, user: LoginInputSchema) -> str:
+    def login(self, data: LoginInputSchema) -> str:
         try:
-            user = self.user_service.get_by_email(user.email)
-            if not user:
+            dbUser = self.user_service.get_by_email(data.email)
+            if not dbUser:
                 raise self.UserNotFoundException("User not found")
-            if user.password != user.password:
+            if dbUser.password != data.password:
                 raise HTTPException(
                     status_code=401, detail="Incorrect email or password"
                 )
-            token = self._generate_token(user.email)
+            token = self._generate_token(data.email)
             return LoginOutputSchema(
-                id=user.id, name=user.name, email=user.email, token=token
+                id=dbUser.id, name=dbUser.name, email=dbUser.email, token=token
             )
         except UserService.UserNotFoundException:
             raise self.UserNotFoundException("User not found")

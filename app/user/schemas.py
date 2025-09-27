@@ -14,7 +14,7 @@ class LoginInputSchema(BaseSchema):
 
 
 class LoginOutputSchema(BaseSchema):
-    id: str
+    id: int
     name: str
     email: EmailStr
     token: str

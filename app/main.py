@@ -37,7 +37,7 @@ api_router.include_router(user_router)
 
 @api_router.get("/health", tags=["Health"])
 def health_check():
-    return {"msg": "Hello, FastAPI + JWT!"}
+    return {"message": "Hello, Welcome to Task Tracker"}
 
 
 app.include_router(api_router)

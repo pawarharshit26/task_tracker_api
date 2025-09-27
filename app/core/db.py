@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
+from pydantic import BaseModel as PydanticBaseModel
 
 from app.core.exceptions import BaseException
 
@@ -23,6 +24,10 @@ def get_db():
 
 class BaseModel(Base):
     __abstract__ = True
+
+
+class BaseEntity(PydanticBaseModel):
+    pass
 
 
 class BaseRepo:
