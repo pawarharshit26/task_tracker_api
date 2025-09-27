@@ -21,8 +21,8 @@ def get_db():
         db.close()
 
 
-class BaseModel:
-    pass
+class BaseModel(Base):
+    __abstract__ = True
 
 
 class BaseRepo:
