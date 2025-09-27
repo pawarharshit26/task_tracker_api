@@ -3,3 +3,4 @@ __pycache__/
 .env
 /app/__pycache__/
 .ruff_cache
+/app.db
