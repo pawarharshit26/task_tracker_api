@@ -1,5 +1,4 @@
-.PHONY: lint fmt run dev
-
+.PHONY: lint fmt run dev migrations migrate
 
 # Lint code (check only)
 lint:
@@ -17,3 +16,9 @@ run:
 # Shortcut for dev workflow: format + run
 dev: 
 	@fmt run
+
+migrations:
+	@alembic revision --autogenerate -m "$(m)"
+
+migrate:
+	@alembic upgrade head
