@@ -1,2 +1,5 @@
 __pycache__/
 task-tracker-key.pem
+apis/__pycache__/
+tasks.db
+.env
