@@ -3,7 +3,7 @@ from app.db.models.base import CreateUpdateDeleteModel
 
 
 class User(CreateUpdateDeleteModel):
-    __tablename__ = "users"
+    __tablename__ = "user"
     
     email = Column(String, unique=True, index=True, nullable=False, comment="User's email address (must be unique)")
     name = Column(String, nullable=False, comment="User's full name")
