@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from app.apis.base import router
-from app.apis.base import BaseAPIException
+from app.apis.exceptions import BaseAPIException
 
 app = FastAPI(title="Task Tracker API", description="Task Tracker API", version="1.0.0")
 
