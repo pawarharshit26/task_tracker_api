@@ -1,11 +1,17 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    JWT_SECRET: str = "supersecret"
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    # JWT Configuration
+    JWT_SECRET: str
+    JWT_ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    DATABASE_URL: str = "sqlite:///./test.db"
+    # Database Configuration
+    DATABASE_URL: str
+    
+    # Application Settings
+    ENVIRONMENT: str
+    SECRET_KEY: str
 
     class Config:
         env_file = ".env"
