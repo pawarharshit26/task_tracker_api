@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-
 from fastapi import Depends
+from typing import Annotated
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
@@ -11,5 +11,5 @@ class BaseEntity(BaseModel):
 
 
 class BaseService:
-    def __init__(self, db: AsyncSession = Depends(get_db)) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db

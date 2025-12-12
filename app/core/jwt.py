@@ -1,22 +1,21 @@
-import jwt
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Union
 
-from app.core.exceptions import BaseException
+import jwt
+
 from app.core.config import settings
+from app.core.exceptions import BaseException
 
 
 class JWT:
     class JWTException(BaseException):
         pass
-    
+
     class JWTTokenExpiredException(JWTException):
         pass
 
     class JWTInvalidTokenException(JWTException):
         pass
-
-
 
     def __init__(self):
         self.algorithm = settings.JWT_ALGORITHM
@@ -27,16 +26,16 @@ class JWT:
         self,
         subject: Union[dict, Any],
         expires_delta: Optional[timedelta] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Create a JWT access token
-        
+
         Args:
             subject: The subject or data to encode
             expires_delta: Optional timedelta for token expiration
             **kwargs: Additional claims to include in the token
-            
+
         Returns:
             str: Encoded JWT token
         """
@@ -46,50 +45,36 @@ class JWT:
             expire = datetime.utcnow() + timedelta(
                 minutes=self.access_token_expire_minutes
             )
-            
-        to_encode = {
-            "exp": expire,
-            "iat": datetime.utcnow(),
-            "sub": subject,
-            **kwargs
-        }
-        
-        return jwt.encode(
-            to_encode,
-            self.secret_key,
-            algorithm=self.algorithm
-        )
+
+        to_encode = {"exp": expire, "iat": datetime.utcnow(), "sub": subject, **kwargs}
+
+        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
     def decode_token(
-        self,
-        token: str,
-        options: Optional[Dict[str, bool]] = None
+        self, token: str, options: Optional[Dict[str, bool]] = None
     ) -> Dict[str, Any]:
         """
         Decode and validate a JWT token
-        
+
         Args:
             token: The JWT token to decode
             options: Optional dict of options to pass to PyJWT decode
-            
+
         Returns:
             Dict containing the token payload
-            
+
         Raises:
             PyJWTError: If the token is invalid or expired
         """
         if options is None:
             options = {"verify_signature": True, "verify_exp": True}
-            
+
         try:
             payload = jwt.decode(
-                token,
-                self.secret_key,
-                algorithms=[self.algorithm],
-                options=options
+                token, self.secret_key, algorithms=[self.algorithm], options=options
             )
             return payload
-            
+
         except jwt.ExpiredSignatureError:
             raise self.JWTTokenExpiredException("Token has expired")
         except jwt.InvalidTokenError as e:

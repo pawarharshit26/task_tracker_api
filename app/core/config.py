@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     # JWT Configuration
     JWT_SECRET: str
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
 
     # Database Configuration
     DATABASE_URL: str
-    
+
     # Application Settings
     ENVIRONMENT: str
     SECRET_KEY: str

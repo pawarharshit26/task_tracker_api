@@ -1,30 +1,31 @@
-
-from pydantic import  EmailStr
+import structlog
 from datetime import datetime
-
+from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import EmailStr
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.base import BaseEntity
 from app.core.exceptions import BaseException
-from app.services.base import BaseService
-from app.db.models.user import User
-from app.db.base import get_db
 from app.core.security import get_hash
+from app.db.base import get_db
+from app.db.models.user import User
+from app.services.base import BaseEntity, BaseService
+
+logger = structlog.get_logger(__name__)
 
 
 class UserSignUpEntity(BaseEntity):
     email: EmailStr
-    password: str   
-    name: str 
+    password: str
+    name: str
 
 
 class UserEntity(BaseEntity):
     id: int
     email: EmailStr
-    name: str 
+    name: str
     created_at: datetime
     updated_at: datetime
 
@@ -40,12 +41,17 @@ class UserService(BaseService):
         message = "User Already Exists"
 
     async def create_user(self, user: UserSignUpEntity) -> UserEntity:
-        query = select(User).where(User.email == user.email, User.is_active == True, User.deleted_at.is_(None))
+        logger.info("Creating user", email=user.email)
+
+        query = select(User).where(
+            User.email == user.email, User.is_active == True, User.deleted_at.is_(None)
+        )
         result = await self.db.execute(query)
         existing_user = result.scalar_one_or_none()
         if existing_user:
+            logger.info("User already exists", email=user.email)
             raise self.UserAlreadyExistsException()
-        
+
         user = User(
             email=user.email,
             name=user.name,
@@ -56,10 +62,12 @@ class UserService(BaseService):
         )
 
         self.db.add(user)
-        await self.db.commit()
+        # await self.db.commit() # using autocommit currently
         await self.db.refresh(user)
+
+        logger.info("User created", email=user.email)
         return UserEntity.model_validate(user, from_attributes=True)
 
 
-def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+def get_user_service(db: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
     return UserService(db)

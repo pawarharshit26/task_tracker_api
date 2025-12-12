@@ -1,8 +1,8 @@
 from typing import Optional, Union
 
-from pydantic import BaseModel
 from fastapi import status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from app.core.exceptions import BaseException
 
@@ -18,4 +18,3 @@ class ResponseEntity(BaseModel):
             content=self.model_dump(),
             status_code=self.code,
         )
-
