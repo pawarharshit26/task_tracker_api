@@ -14,7 +14,18 @@ class BaseModel(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-class CreateModel:
+class CreateModel(BaseModel):
+    __abstract__ = True
+
+    @declared_attr
+    def created_at(cls):
+        return Column(
+            DateTime,
+            nullable=False,
+            default=datetime.utcnow,
+            comment="Timestamp when this record was soft-deleted",
+        )
+
     @declared_attr
     def creator_id(cls):
         return Column(
@@ -31,7 +42,19 @@ class CreateModel:
         )
 
 
-class UpdateModel:
+class UpdateModel(BaseModel):
+    __abstract__ = True
+
+    @declared_attr
+    def updated_at(cls):
+        return Column(
+            DateTime,
+            nullable=False,
+            default=datetime.utcnow,
+            onupdate=datetime.utcnow,
+            comment="Timestamp when this record was soft-deleted",
+        )
+
     @declared_attr
     def updater_id(cls):
         return Column(
@@ -48,7 +71,9 @@ class UpdateModel:
         )
 
 
-class DeleteModel:
+class DeleteModel(BaseModel):
+    __abstract__ = True
+
     @declared_attr
     def deleted_at(cls):
         return Column(
@@ -73,5 +98,5 @@ class DeleteModel:
         )
 
 
-class CreateUpdateDeleteModel(BaseModel, CreateModel, UpdateModel, DeleteModel):
+class CreateUpdateDeleteModel(CreateModel, UpdateModel, DeleteModel):
     __abstract__ = True
