@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import Annotated, APIRouter, Depends, status
 
 from app.apis.exceptions import BaseAPIException
 from app.apis.response import ResponseEntity
@@ -14,7 +14,7 @@ user_router = APIRouter()
 
 @user_router.post(path="/signup", response_model=UserEntity)
 async def signup(
-    data: UserSignUpEntity, service: UserService = Depends(get_user_service)
+    data: UserSignUpEntity, service: Annotated[UserService, Depends(get_user_service)]
 ):
     try:
         user = await service.create_user(data)
@@ -22,4 +22,4 @@ async def signup(
     except UserService.UserAlreadyExistsException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_400_BAD_REQUEST
-        )
+        ) from None

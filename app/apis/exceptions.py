@@ -11,7 +11,7 @@ class BaseAPIException(BaseException):
 
     def __init__(
         self,
-        message: str = None,
+        message: str | None = None,
         status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
     ):
         self.code = status_code

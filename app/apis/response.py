@@ -4,8 +4,6 @@ from fastapi import status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.core.exceptions import BaseException
-
 
 class ResponseEntity(BaseModel):
     code: int = status.HTTP_200_OK

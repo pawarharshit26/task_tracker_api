@@ -1,7 +1,7 @@
-import structlog
 from datetime import datetime
 from typing import Annotated
 
+import structlog
 from fastapi import Depends
 from pydantic import EmailStr
 from sqlalchemy import select
@@ -44,7 +44,7 @@ class UserService(BaseService):
         logger.info("Creating user", email=user.email)
 
         query = select(User).where(
-            User.email == user.email, User.is_active == True, User.deleted_at.is_(None)
+            User.email == user.email, User.is_active.is_(True), User.deleted_at.is_(None)
         )
         result = await self.db.execute(query)
         existing_user = result.scalar_one_or_none()

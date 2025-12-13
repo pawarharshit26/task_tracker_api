@@ -76,11 +76,11 @@ class JWT:
             return payload
 
         except jwt.ExpiredSignatureError:
-            raise self.JWTTokenExpiredException("Token has expired")
+            raise self.JWTTokenExpiredException("Token has expired") from None
         except jwt.InvalidTokenError as e:
-            raise self.JWTInvalidTokenException(f"Invalid token: {str(e)}")
+            raise self.JWTInvalidTokenException(f"Invalid token: {e!s}") from e
 
-    def get_payload(self, token: str) -> Dict[str, Any]:
+    def get_payload(self, token: str) -> dict[str, Any]:
         """Get token payload without signature verification"""
         return self.decode_token(token, options={"verify_signature": False})
 
