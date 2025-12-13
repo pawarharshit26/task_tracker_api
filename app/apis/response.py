@@ -1,11 +1,11 @@
-from typing import Optional, TypeVar, Generic 
+from typing import Generic, Optional, TypeVar
 
 from fastapi import status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-
 T = TypeVar("T")
+
 
 class ResponseEntity(BaseModel, Generic[T]):
     code: int = status.HTTP_200_OK

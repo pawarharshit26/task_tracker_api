@@ -21,7 +21,7 @@ async def signup(
 ):
     try:
         user = await service.create_user(data)
-        return ResponseEntity(data=user)
+        return ResponseEntity[UserTokenEntity](data=user)
     except UserService.UserAlreadyExistsException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_400_BAD_REQUEST
@@ -34,7 +34,7 @@ async def signin(
 ):
     try:
         user = await service.sign_in(data)
-        return ResponseEntity(data=user)
+        return ResponseEntity[UserTokenEntity](data=user)
     except UserService.UserInvalidPasswordException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_401_UNAUTHORIZED

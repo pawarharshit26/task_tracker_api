@@ -1,7 +1,5 @@
 from fastapi import status
-from fastapi.responses import JSONResponse
 
-from app.apis.response import ResponseEntity
 from app.core.exceptions import BaseException
 
 
@@ -16,5 +14,3 @@ class BaseAPIException(BaseException):
     ):
         self.code = status_code
         super().__init__(message=message)
-
-    

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import BaseException
+from app.core.hash_ids import HashId
 from app.core.jwt import get_jwt
 from app.core.security import get_hash, verify_hash
 from app.db.base import get_db
@@ -31,7 +32,7 @@ class UserSignInEntity(BaseEntity):
 
 
 class UserEntity(BaseEntity):
-    id: int
+    id: HashId
     email: EmailStr
     name: str
     created_at: datetime
@@ -116,7 +117,10 @@ class UserService(BaseService):
 
         logger.info("User signed in", email=user.email)
         return UserTokenEntity.model_validate(
-            {"token": jwt_token, "user": UserEntity.model_validate(user, from_attributes=True)}
+            {
+                "token": jwt_token,
+                "user": UserEntity.model_validate(user, from_attributes=True),
+            }
         )
 
     async def create_auth_token(self, user: User) -> AuthToken:
