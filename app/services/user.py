@@ -125,6 +125,15 @@ class UserService(BaseService):
             }
         )
 
+    async def signout(self, user_id: int):
+        logger.info("Signing out user", user_id=user_id)
+
+        query = delete(AuthToken).where(AuthToken.user_id == user_id)
+        await self.db.execute(query)
+        await self.db.commit()
+
+        logger.info("User signed out", user_id=user_id)
+
     async def create_auth_token(self, user: User) -> AuthToken:
         logger.info("create auth token", email=user.email)
 

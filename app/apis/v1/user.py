@@ -63,3 +63,17 @@ async def me(
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_404_NOT_FOUND
         ) from None
+
+
+@user_router.post(path="/signout")
+async def signout(
+    service: Annotated[UserService, Depends(get_user_service)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
+):
+    try:
+        await service.signout(user_id=user_id)
+        return ResponseEntity(data={})
+    except UserService.UserNotFoundException as e:
+        raise BaseAPIException(
+            message=str(e.message), status_code=status.HTTP_404_NOT_FOUND
+        ) from None
