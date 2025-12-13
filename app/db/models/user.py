@@ -19,11 +19,13 @@ class User(CreateUpdateDeleteModel):
     is_active = Column(
         Boolean, default=True, comment="Whether the user account is active"
     )
+    
     auth_token = relationship(
         "AuthToken",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
+        foreign_keys="[AuthToken.user_id]",
     )
 
     def __repr__(self) -> str:
@@ -37,7 +39,7 @@ class AuthToken(CreateModel):
     token = Column(String, nullable=False, unique=True)
     expires_at = Column(DateTime, nullable=False)
 
-    user = relationship("User", back_populates="auth_token")
+    user = relationship("User", back_populates="auth_token", foreign_keys=[user_id])
 
     def __repr__(self) -> str:
         return f"<AuthToken(id={self.id}, token='{self.user_id}')>"

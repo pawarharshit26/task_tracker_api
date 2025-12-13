@@ -64,7 +64,7 @@ class UserService(BaseService):
         )
 
         self.db.add(user)
-        # await self.db.commit() # using autocommit currently
+        await self.db.commit() # using autocommit currently
         await self.db.refresh(user)
 
         logger.info("User created", email=user.email)

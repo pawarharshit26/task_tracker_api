@@ -1,4 +1,6 @@
-from fastapi import Annotated, APIRouter, Depends, status
+
+from typing import Annotated
+from fastapi import APIRouter, Depends, status
 
 from app.apis.exceptions import BaseAPIException
 from app.apis.response import ResponseEntity
