@@ -5,10 +5,12 @@ from fastapi import APIRouter, Depends, status
 from app.apis.exceptions import BaseAPIException
 from app.apis.response import ResponseEntity
 from app.services.user import (
+    UserEntity,
     UserService,
     UserSignInEntity,
     UserSignUpEntity,
     UserTokenEntity,
+    get_current_user_id,
     get_user_service,
 )
 
@@ -46,4 +48,18 @@ async def signin(
     except UserService.UserException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_400_BAD_REQUEST
+        ) from None
+
+
+@user_router.get(path="/me", response_model=ResponseEntity[UserEntity])
+async def me(
+    service: Annotated[UserService, Depends(get_user_service)],
+    user_id: Annotated[int, Depends(get_current_user_id)],
+):
+    try:
+        user = await service.get_user(user_id=user_id)
+        return ResponseEntity[UserEntity](data=user)
+    except UserService.UserNotFoundException as e:
+        raise BaseAPIException(
+            message=str(e.message), status_code=status.HTTP_404_NOT_FOUND
         ) from None

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Union
 
@@ -46,6 +47,10 @@ class JWT:
                 minutes=self.access_token_expire_minutes
             )
 
+        # If subject is a dict, serialize it to a JSON string to satisfy JWT 'sub' claim requirement (must be string)
+        if isinstance(subject, dict):
+            subject = json.dumps(subject)
+
         to_encode = {"exp": expire, "iat": datetime.utcnow(), "sub": subject, **kwargs}
 
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
@@ -73,6 +78,14 @@ class JWT:
             payload = jwt.decode(
                 token, self.secret_key, algorithms=[self.algorithm], options=options
             )
+
+            # If 'sub' is a JSON string, assume it's a serialized dict and deserialize it
+            if "sub" in payload and isinstance(payload["sub"], str):
+                try:
+                    payload["sub"] = json.loads(payload["sub"])
+                except json.JSONDecodeError:
+                    pass  # Keep as string if not valid JSON
+
             return payload
 
         except jwt.ExpiredSignatureError:
