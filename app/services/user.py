@@ -1,16 +1,19 @@
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 from typing import Annotated
 
 import structlog
 from fastapi import Depends
 from pydantic import EmailStr
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import BaseException
-from app.core.security import get_hash
+from app.core.jwt import get_jwt
+from app.core.security import get_hash, verify_hash
 from app.db.base import get_db
-from app.db.models.user import User
+from app.db.models.user import AuthToken, User
 from app.services.base import BaseEntity, BaseService
 
 logger = structlog.get_logger(__name__)
@@ -20,6 +23,11 @@ class UserSignUpEntity(BaseEntity):
     email: EmailStr
     password: str
     name: str
+
+
+class UserSignInEntity(BaseEntity):
+    email: EmailStr
+    password: str
 
 
 class UserEntity(BaseEntity):
@@ -33,6 +41,11 @@ class UserEntity(BaseEntity):
         from_attributes = True
 
 
+class UserTokenEntity(BaseEntity):
+    token: str
+    user: UserEntity
+
+
 class UserService(BaseService):
     class UserException(BaseException):
         message = "User Exception"
@@ -40,35 +53,100 @@ class UserService(BaseService):
     class UserAlreadyExistsException(UserException):
         message = "User Already Exists"
 
-    async def create_user(self, user: UserSignUpEntity) -> UserEntity:
-        logger.info("Creating user", email=user.email)
+    class UserNotFoundException(UserException):
+        message = "User Not Found"
+
+    class UserInvalidPasswordException(UserException):
+        message = "Invalid Password"
+
+    async def create_user(self, input: UserSignUpEntity) -> UserTokenEntity:
+        logger.info("Creating user", email=input.email)
 
         query = select(User).where(
-            User.email == user.email,
+            User.email == input.email,
             User.is_active.is_(True),
             User.deleted_at.is_(None),
         )
         result = await self.db.execute(query)
         existing_user = result.scalar_one_or_none()
         if existing_user:
-            logger.info("User already exists", email=user.email)
+            logger.info("User already exists", email=input.email)
             raise self.UserAlreadyExistsException()
 
         user = User(
-            email=user.email,
-            name=user.name,
-            password=get_hash(user.password),
+            email=input.email,
+            name=input.name,
+            password=get_hash(input.password),
             is_active=True,
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )
 
         self.db.add(user)
-        await self.db.commit() # using autocommit currently
+        await self.db.commit()  # using autocommit currently
         await self.db.refresh(user)
 
         logger.info("User created", email=user.email)
         return UserEntity.model_validate(user, from_attributes=True)
+
+    async def sign_in(self, input: UserSignInEntity) -> UserTokenEntity:
+        logger.info("Signing in user", email=input.email)
+
+        query = select(User).where(
+            User.email == input.email,
+            User.is_active.is_(True),
+            User.deleted_at.is_(None),
+        )
+
+        result = await self.db.execute(query)
+        user = result.scalar_one_or_none()
+        if not user:
+            logger.info("User not found", email=user.email)
+            raise self.UserNotFoundException()
+
+        if not verify_hash(input=input.password, hashed=user.password):
+            logger.info("Invalid password", email=user.email)
+            raise self.UserInvalidPasswordException()
+
+        logger.info("Identity verified", email=user.email)
+
+        auth_token = await self.create_auth_token(user)
+
+        jwt_token = self._encode_jwt(user=user, auth_token=auth_token)
+
+        logger.info("User signed in", email=user.email)
+        return UserTokenEntity.model_validate(
+            {"token": jwt_token, "user": UserEntity.model_validate(user, from_attributes=True)}
+        )
+
+    async def create_auth_token(self, user: User) -> AuthToken:
+        logger.info("create auth token", email=user.email)
+
+        query = delete(AuthToken).where(AuthToken.user_id == user.id)
+        await self.db.execute(query)
+
+        token = AuthToken(
+            user_id=user.id,
+            token=self._genrate_token_string(),
+            expires_at=datetime.now()
+            + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        )
+
+        self.db.add(token)
+        await self.db.commit()
+        await self.db.refresh(token)
+
+        logger.info("Token generated", email=user.email)
+        return token
+
+    def _genrate_token_string(self) -> str:
+        return secrets.token_urlsafe(64)
+
+    def _encode_jwt(self, user: User, auth_token: AuthToken) -> str:
+        sub = {
+            "auth_token": auth_token.token,
+        }
+        return get_jwt().encode(sub)
 
 
 def get_user_service(db: Annotated[AsyncSession, Depends(get_db)]) -> UserService:

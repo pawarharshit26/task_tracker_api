@@ -19,7 +19,7 @@ class User(CreateUpdateDeleteModel):
     is_active = Column(
         Boolean, default=True, comment="Whether the user account is active"
     )
-    
+
     auth_token = relationship(
         "AuthToken",
         back_populates="user",

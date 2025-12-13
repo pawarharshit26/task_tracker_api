@@ -22,7 +22,7 @@ class JWT:
         self.secret_key = settings.JWT_SECRET
         self.access_token_expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-    def create_access_token(
+    def encode(
         self,
         subject: Union[dict, Any],
         expires_delta: Optional[timedelta] = None,
@@ -50,7 +50,7 @@ class JWT:
 
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
-    def decode_token(
+    def decode(
         self, token: str, options: Optional[Dict[str, bool]] = None
     ) -> Dict[str, Any]:
         """
@@ -82,17 +82,19 @@ class JWT:
 
     def get_payload(self, token: str) -> dict[str, Any]:
         """Get token payload without signature verification"""
-        return self.decode_token(token, options={"verify_signature": False})
+        return self.decode(token, options={"verify_signature": False})
 
-    def get_subject(self, token: str) -> str:
-        """Get the subject (sub) from a token"""
-        payload = self.get_payload(token)
+    def get_subject(self, payload: dict[str, Any]) -> str:
         return payload.get("sub")
 
     def is_token_expired(self, token: str) -> bool:
         """Check if a token is expired"""
         try:
-            self.decode_token(token)
+            self.decode(token)
             return False
         except Exception:
             return True
+
+
+def get_jwt():
+    return JWT()
