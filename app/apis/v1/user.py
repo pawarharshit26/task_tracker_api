@@ -15,26 +15,26 @@ from app.services.user import (
 user_router = APIRouter()
 
 
-@user_router.post(path="/signup", response_model=UserTokenEntity)
+@user_router.post(path="/signup", response_model=ResponseEntity[UserTokenEntity])
 async def signup(
     data: UserSignUpEntity, service: Annotated[UserService, Depends(get_user_service)]
 ):
     try:
         user = await service.create_user(data)
-        return ResponseEntity(data=user).to_response()
+        return ResponseEntity(data=user)
     except UserService.UserAlreadyExistsException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_400_BAD_REQUEST
         ) from None
 
 
-@user_router.post(path="/signin", response_model=UserTokenEntity)
+@user_router.post(path="/signin", response_model=ResponseEntity[UserTokenEntity])
 async def signin(
     data: UserSignInEntity, service: Annotated[UserService, Depends(get_user_service)]
 ):
     try:
         user = await service.sign_in(data)
-        return ResponseEntity(data=user).to_response()
+        return ResponseEntity(data=user)
     except UserService.UserInvalidPasswordException as e:
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_401_UNAUTHORIZED

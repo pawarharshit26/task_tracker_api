@@ -17,8 +17,4 @@ class BaseAPIException(BaseException):
         self.code = status_code
         super().__init__(message=message)
 
-    def to_response(self) -> JSONResponse:
-        return JSONResponse(
-            status_code=self.code,
-            content=ResponseEntity(code=self.code, error=self.message).model_dump(),
-        )
+    

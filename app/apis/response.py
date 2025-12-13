@@ -1,14 +1,16 @@
-from typing import Optional, Union
+from typing import Optional, TypeVar, Generic 
 
 from fastapi import status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 
-class ResponseEntity(BaseModel):
+T = TypeVar("T")
+
+class ResponseEntity(BaseModel, Generic[T]):
     code: int = status.HTTP_200_OK
     message: str = ""
-    data: Union[dict, BaseModel] = None
+    data: Optional[T] = None
     error: Optional[str] = None
 
     def to_response(self) -> JSONResponse:
