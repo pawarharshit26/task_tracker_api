@@ -15,11 +15,11 @@ logger = structlog.get_logger(__name__)
 @router.get("/health")
 async def health(db: Annotated[Session, Depends(get_db)]):
     logger.info("Health check started")
-    result = await db.execute(text("SELECT 1"))
+    await db.execute(text("SELECT 1"))
     logger.info("Health check completed, database connected successfully")
     return ResponseEntity(
         code=status.HTTP_200_OK, message="I am healthy", data={}
-    ).to_response()
+    )
 
 
 router.include_router(router_v1)
