@@ -1,44 +1,46 @@
 # ---------- Builder ----------
 FROM python:3.13-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install system deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
-    curl \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install poetry
-RUN pip install --no-cache-dir poetry
+COPY pyproject.toml poetry.lock* ./
 
-# Copy poetry files only
-COPY pyproject.toml poetry.lock ./
+RUN pip install --upgrade pip \
+    && pip install poetry poetry-plugin-export
 
-# Install prod dependencies only
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-root --no-interaction --no-ansi
+RUN poetry export \
+    --only main \
+    --without-hashes \
+    -f requirements.txt \
+    -o requirements.txt
+
+RUN pip wheel --no-cache-dir -r requirements.txt -w /wheels
 
 
 # ---------- Runtime ----------
 FROM python:3.13-slim
 
-WORKDIR /app
-
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Runtime system deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
+WORKDIR /app
+
+# Runtime libs ONLY (small)
+RUN apt-get update && apt-get install -y \
     libpq5 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages
-COPY --from=builder /usr/local /usr/local
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* \
+    && rm -rf /wheels
 
-# Copy app code
 COPY app ./app
 
 EXPOSE 8000
