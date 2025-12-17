@@ -35,3 +35,31 @@ dev = [
     "alembic (>=1.17.2,<2.0.0)",
     "isort (>=7.0.0,<8.0.0)"
 ]
+
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.venv
+  | env
+  | migrations
+  | _pycache_
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["app"]
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = ["E", "F", "W", "C", "B", "RUF", "I"]
+ignore = ["E501"]  # Ignore line length (handled by Black)
+exclude = ["env", ".venv", "_pycache_", "migrations"]
