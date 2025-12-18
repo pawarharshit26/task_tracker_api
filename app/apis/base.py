@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.apis.response import ResponseEntity
 from app.apis.v1.base import router as router_v1
@@ -15,7 +15,7 @@ logger = structlog.get_logger(__name__)
 
 
 @router.get("/health")
-async def health(db: Annotated[Session, Depends(get_db)]):
+async def health(db: Annotated[AsyncSession, Depends(get_db)]):
     logger.info("Health check started")
     await db.execute(text("SELECT 1"))
     logger.info("Health check completed, database connected successfully")
