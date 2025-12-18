@@ -7,14 +7,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.logging import request_id_ctx
 
-log = structlog.get_logger()
+logger = structlog.get_logger(__name__)
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
 
-        log.info(
+        logger.info(
             "request_started",
             request_id=request.state.request_id,
             method=request.method,
@@ -25,7 +25,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         process_time = (time.time() - start_time) * 1000
-        log.info(
+        logger.info(
             "request_completed",
             request_id=request.state.request_id,
             method=request.method,
