@@ -10,9 +10,6 @@ class BaseModel(Base):
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
 
 class CreateModel(BaseModel):
     __abstract__ = True
@@ -23,7 +20,7 @@ class CreateModel(BaseModel):
             DateTime,
             nullable=False,
             default=datetime.utcnow,
-            comment="Timestamp when this record was soft-deleted",
+            comment="Timestamp when this record was created",
         )
 
     @declared_attr
@@ -52,7 +49,7 @@ class UpdateModel(BaseModel):
             nullable=False,
             default=datetime.utcnow,
             onupdate=datetime.utcnow,
-            comment="Timestamp when this record was soft-deleted",
+            comment="Timestamp when this record was updated",
         )
 
     @declared_attr
@@ -79,7 +76,7 @@ class DeleteModel(BaseModel):
         return Column(
             DateTime,
             nullable=True,
-            comment="Timestamp when this record was soft-deleted",
+            comment="Timestamp when this record was deleted",
         )
 
     @declared_attr

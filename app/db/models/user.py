@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm._orm_constructors import relationship
+from sqlalchemy.orm import relationship
 
-from app.db.models.base import CreateModel, CreateUpdateDeleteModel
+from app.db.models.base import CreateUpdateDeleteModel
 
 
 class User(CreateUpdateDeleteModel):
@@ -27,6 +27,8 @@ class User(CreateUpdateDeleteModel):
         cascade="all, delete-orphan",
         foreign_keys="[AuthToken.user_id]",
     )
+
+    vision = relationship("Vision", back_populates="user", foreign_keys="[Vision.user_id]")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"
