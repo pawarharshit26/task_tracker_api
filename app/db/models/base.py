@@ -11,6 +11,7 @@ class BaseModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
+
 class CreateModel(BaseModel):
     __abstract__ = True
 

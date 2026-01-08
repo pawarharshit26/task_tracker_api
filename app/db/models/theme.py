@@ -1,7 +1,7 @@
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.models.base import CreateUpdateDeleteModel
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import relationship
 
 
 class Theme(CreateUpdateDeleteModel):
@@ -20,17 +20,21 @@ class Theme(CreateUpdateDeleteModel):
     •	Themes group intention
 
     Rules
-    •	3–6 active themes max   
+    •	3-6 active themes max
     •	Must belong to a Vision
     """
 
     __tablename__ = "theme"
 
-    vision_id: Mapped[int] = mapped_column(Integer, ForeignKey("vision.id"), nullable=False)
+    vision_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("vision.id"), nullable=False
+    )
     vision = relationship("Vision", back_populates="themes", foreign_keys=[vision_id])
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    tracks = relationship("Track", back_populates="theme", foreign_keys="Track.theme_id")
+    tracks = relationship(
+        "Track", back_populates="theme", foreign_keys="[Track.theme_id]"
+    )
