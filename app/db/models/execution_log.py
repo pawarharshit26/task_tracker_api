@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, Integer, Text
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
 
@@ -25,10 +25,10 @@ class ExecutionLog(CreateUpdateDeleteModel):
     """
 
     __tablename__ = "execution_log"
-    commitment_id = mapped_column(
+    commitment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("daily_commitment.id"), nullable=False, unique=True
     )
     commitment = relationship("DailyCommitment", back_populates="execution_log")
 
-    actual_output = mapped_column(Text)
-    reflection = mapped_column(Text)
+    actual_output: Mapped[str] = mapped_column(Text)
+    reflection: Mapped[str] = mapped_column(Text)

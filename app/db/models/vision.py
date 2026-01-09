@@ -44,6 +44,6 @@ class Vision(CreateUpdateDeleteModel):
         doc="Whether the vision is active or not.",
     )
 
-    themes = relationship(
+    themes: Mapped[list] = relationship(
         "Theme", back_populates="vision", foreign_keys="[Theme.vision_id]"
     )

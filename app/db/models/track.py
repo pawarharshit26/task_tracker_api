@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
 
@@ -26,11 +26,15 @@ class Track(CreateUpdateDeleteModel):
 
     __tablename__ = "track"
 
-    theme_id = mapped_column(Integer, ForeignKey("theme.id"), nullable=False)
+    theme_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("theme.id"), nullable=False
+    )
     theme = relationship("Theme", back_populates="tracks", foreign_keys=[theme_id])
 
-    name = mapped_column(String, nullable=False)
-    description = mapped_column(Text)
-    is_active = mapped_column(Boolean, default=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    goals = relationship("Goal", back_populates="track", foreign_keys="[Goal.track_id]")
+    goals: Mapped[list] = relationship(
+        "Goal", back_populates="track", foreign_keys="[Goal.track_id]"
+    )

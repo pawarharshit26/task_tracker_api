@@ -35,6 +35,6 @@ class Theme(CreateUpdateDeleteModel):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    tracks = relationship(
+    tracks: Mapped[list] = relationship(
         "Track", back_populates="theme", foreign_keys="[Track.theme_id]"
     )

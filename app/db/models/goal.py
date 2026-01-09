@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, Integer, String, Text
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
 
@@ -23,12 +23,15 @@ class Goal(CreateUpdateDeleteModel):
 
     __tablename__ = "goal"
 
-    track_id = mapped_column(Integer, ForeignKey("track.id"), nullable=False)
+    track_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("track.id"), nullable=False
+    )
     track = relationship("Track", back_populates="goals", foreign_keys=[track_id])
+    # description lived in blocks
 
-    title = mapped_column(String, nullable=False)
-    description = mapped_column(Text)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text)
 
-    phases = relationship(
+    phases: Mapped[list] = relationship(
         "Phase", back_populates="goal", foreign_keys="[Phase.goal_id]"
     )

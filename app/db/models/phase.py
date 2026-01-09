@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, String
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
 
@@ -22,12 +22,14 @@ class Phase(CreateUpdateDeleteModel):
 
     __tablename__ = "phase"
 
-    goal_id = mapped_column(Integer, ForeignKey("goal.id"), nullable=False)
+    goal_id: Mapped[int] = mapped_column(Integer, ForeignKey("goal.id"), nullable=False)
     goal = relationship("Goal", back_populates="phases")
 
-    title = mapped_column(String, nullable=False)
-    start_date = mapped_column(Date)
-    end_date = mapped_column(Date)
-    is_active = mapped_column(Boolean, default=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    start_date: Mapped[Date] = mapped_column(Date)
+    end_date: Mapped[Date] = mapped_column(Date)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    daily_commitments = relationship("DailyCommitment", back_populates="phase")
+    daily_commitments: Mapped[list] = relationship(
+        "DailyCommitment", back_populates="phase"
+    )
