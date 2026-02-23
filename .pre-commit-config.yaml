@@ -1,0 +1,14 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+repos:
+  - repo: local
+    hooks:
+      - id: make-fmt
+        name: Run make fmt (black + ruff)
+        entry: make fmt
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        description: Run code formatting checks using make fmt
