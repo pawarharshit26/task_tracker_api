@@ -1,190 +1,129 @@
-# AGENTS.md - Pragya Task Tracker API
+# Pragya API (Task Tracker) - Developer & Agent Guide
 
-FastAPI + SQLAlchemy 2.0 (async) task tracker with vision/goal tracking system. Python >=3.10, PostgreSQL.
+This document serves as a comprehensive guide for developers and AI agents working on the Pragya API codebase. It outlines the project structure, architectural patterns, technology stack, and operational workflows.
 
-## Commands
+## 1. Project Overview
 
-### Development
-```bash
-# Run app
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+**Name:** Pragya API
+**Purpose:** Backend API for a Task Tracker application.
+**Status:** In active development (User Management implemented; Task Management pending).
 
-# Format & lint (ALWAYS run before committing)
-make fmt                # Auto-format with black + isort + ruff --fix
-black app               # Format only
-ruff check app --fix    # Lint and fix
+## 2. Tech Stack
 
-# Docker
-docker-compose up -d    # Start PostgreSQL + pgAdmin
-docker build -t pragya-api . && docker run -p 8000:8000 pragya-api
-```
+*   **Language:** Python 3.10+
+*   **Web Framework:** **FastAPI** (Async)
+*   **Database:** **PostgreSQL**
+*   **ORM:** **SQLAlchemy** (Async)
+*   **Database Driver:** **AsyncPG**
+*   **Migrations:** **Alembic**
+*   **Validation:** **Pydantic**
+*   **Authentication:** **PyJWT** (JWT), **Passlib** (Hashing)
+*   **Logging:** **Structlog** (JSON structured logs)
+*   **Dependency Management:** **Poetry**
+*   **Linting/Formatting:** **Black**, **Ruff**, **Isort**
 
-### Database
-```bash
-alembic revision --autogenerate -m "description"  # Create migration
-alembic upgrade head                              # Apply migrations
-alembic downgrade -1                              # Rollback one
-```
+## 3. Project Structure
 
-### Testing (NOT IMPLEMENTED YET)
-```bash
-pytest                                  # Run all tests
-pytest tests/unit/test_user_service.py  # Single file
-pytest tests/unit/test_user_service.py::test_create_user  # Single test
-pytest --cov=app --cov-report=html      # With coverage
-```
-
-## Architecture
-
-**Layered:** Route → Service → Database
+The project follows a modular structure within the `app/` directory:
 
 ```
 app/
-├── main.py              # FastAPI app, middleware
-├── apis/                # API routes (controllers)
-│   ├── v1/user.py       # /api/v1/user/* endpoints
-│   ├── exceptions.py    # HTTP exceptions
-│   └── response.py      # ResponseEntity[T] wrapper
-├── core/                # Config, JWT, security, logging, middleware
-├── db/
-│   ├── base.py          # SQLAlchemy engine, session
-│   └── models/          # ORM models (User, Vision, Goal, etc.)
-├── services/            # Business logic (UserService, etc.)
-└── migrations/          # Alembic migrations
+├── apis/               # API Layer (Controllers/Routes)
+│   ├── base.py         # Main router configuration
+│   ├── exceptions.py   # Global exception handling logic
+│   ├── response.py     # Standardized API response format (ResponseEntity)
+│   └── v1/             # Version 1 endpoints
+│       └── user.py     # User-related routes (signup, signin, me)
+├── core/               # Core configuration & utilities
+│   ├── config.py       # Pydantic Settings (env vars)
+│   ├── logging.py      # Structlog setup
+│   ├── security.py     # Auth utilities (password hashing, JWT)
+│   └── middlewares.py  # Request logging, ID tracking
+├── db/                 # Database Layer
+│   ├── base.py         # DB connection & session management
+│   └── models/         # SQLAlchemy models (User, Task, etc.)
+├── services/           # Service Layer (Business Logic)
+│   └── user.py         # User management logic (CRUD, Auth)
+├── migrations/         # Alembic migration scripts
+└── main.py             # Application entry point
 ```
 
-## Code Style
+## 4. Key Architectural Patterns
 
-### Imports (CRITICAL: Always use this structure)
-```python
-# Block 1: Standard library (alphabetical)
-import secrets
-from datetime import datetime, timedelta
-from typing import Annotated
+### Service-Repository Pattern
+*   **API Layer (`app/apis/`)**: Handles HTTP requests, validation (Pydantic), and response formatting. It delegates business logic to the Service Layer.
+*   **Service Layer (`app/services/`)**: Contains all business logic. It interacts directly with the database using SQLAlchemy sessions.
+    *   **Dependency Injection**: Services are injected into API routes using FastAPI's `Depends`.
+    *   **Transactional**: Service methods typically handle transaction commit/rollback (implicit via `AsyncSession` context or explicit management).
 
-# Block 2: Third-party (alphabetical)
-import structlog
-from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+### Database Access
+*   **Async SQLAlchemy**: All database operations are asynchronous.
+*   **Session Management**: A database session is provided via dependency injection (`get_db`) to routes and passed down to services.
 
-# Block 3: Local absolute imports (alphabetical)
-from app.apis.exceptions import BaseAPIException
-from app.core.config import settings
-from app.services.user import UserService
-```
+### Authentication
+*   **JWT**: Stateless authentication using JSON Web Tokens.
+*   **Current User**: A dependency `get_current_user` extracts the user from the token.
 
-**Rules:**
-- NEVER use relative imports (`from .module import`)
-- Black (line length 88) + isort (Black profile) + Ruff
-- Always alphabetical within blocks
+### Standardized Response
+*   All API responses are wrapped in a generic `ResponseEntity` class to ensure a consistent JSON structure (e.g., `{ "code": 200, "message": "Success", "data": ... }`).
 
-### Type Annotations (REQUIRED everywhere)
-```python
-# Functions
-async def create_user(self, input: UserSignUpEntity) -> UserTokenEntity:
-    ...
+### Logging
+*   **Structlog**: Used for structured, context-rich logging.
+*   **Request ID**: A unique ID is generated for each request and included in logs for traceability.
 
-# SQLAlchemy 2.0 mapped columns
-user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
-title: Mapped[str] = mapped_column(String, nullable=False)
+## 5. Development Workflow
 
-# FastAPI dependencies
-async def signup(
-    data: UserSignUpEntity,
-    service: Annotated[UserService, Depends(get_user_service)]
-):
-    ...
+### Prerequisites
+*   Python 3.10+
+*   Poetry
+*   Docker & Docker Compose (for database)
 
-# Use Python 3.10+ syntax: str | None (not Optional[str])
-```
+### Setup
+1.  **Install Dependencies:**
+    ```bash
+    poetry install
+    ```
+2.  **Start Database:**
+    ```bash
+    docker-compose up -d
+    ```
+3.  **Run Migrations:**
+    ```bash
+    alembic upgrade head
+    ```
 
-### Naming Conventions
-- Functions: `snake_case` (`create_user`, `get_db`)
-- Classes: `PascalCase` (`UserService`, `BaseAPIException`)
-- Pydantic entities: `*Entity` suffix (`UserSignUpEntity`)
-- Services: `*Service` suffix (`UserService`)
-- Exceptions: `*Exception` suffix (`UserNotFoundException`)
-- Variables: `snake_case` (`auth_token`, `user_id`)
-- Constants: `UPPER_SNAKE_CASE` (`JWT_SECRET`)
-- Booleans: `is_*` prefix (`is_active`, `is_deleted`)
-
-### Error Handling (Hierarchical)
-```python
-# 1. Define nested exceptions in service
-class UserService(BaseService):
-    class UserException(BaseException):
-        message = "User Exception"
-    
-    class UserNotFoundException(UserException):
-        message = "User Not Found"
-
-# 2. Raise in service
-async def create_user(self, input: UserSignUpEntity) -> UserTokenEntity:
-    if existing_user:
-        raise self.UserAlreadyExistsException()
-
-# 3. Catch and re-raise in route with HTTP status
-@user_router.post("/signup")
-async def signup(data: UserSignUpEntity, service: Annotated[UserService, Depends(get_user_service)]):
-    try:
-        user = await service.create_user(data)
-        return ResponseEntity[UserTokenEntity](data=user)
-    except UserService.UserAlreadyExistsException as e:
-        raise BaseAPIException(
-            message=str(e.message), 
-            status_code=status.HTTP_400_BAD_REQUEST
-        ) from None  # Always use 'from None' to suppress exception chain
-```
-
-### Database Patterns
-```python
-# SELECT
-query = select(User).where(User.email == email, User.is_active.is_(True))
-result = await self.db.execute(query)
-user = result.scalar_one_or_none()
-
-# INSERT
-user = User(email=input.email, name=input.name)
-self.db.add(user)
-await self.db.commit()
-await self.db.refresh(user)  # Get generated fields
-
-# Model inheritance - use CreateUpdateDeleteModel for audit trails
-class User(CreateUpdateDeleteModel):
-    __tablename__ = "user"
-    # Auto-includes: id, created_at, updated_at, deleted_at, creator_id, updater_id, deleter_id
-```
-
-### Logging (structlog)
-```python
-import structlog
-logger = structlog.get_logger(__name__)
-
-logger.info("Creating user", email=input.email)
-logger.info("User created", user_id=user.id, email=user.email)
-# Never use print() or standard logging module
-```
-
-## Critical Rules
-
-1. **NEVER use relative imports** - always `from app.module import`
-2. **ALWAYS add type hints** - functions, variables, SQLAlchemy columns
-3. **ALWAYS use async/await** - this is an async-first codebase
-4. **ALWAYS use soft deletes** - set `deleted_at`, don't actually delete rows
-5. **ALWAYS use ResponseEntity[T]** wrapper for API responses
-6. **ALWAYS use Annotated[Type, Depends()]** for dependency injection
-7. **ALWAYS use structlog** for logging, not `print()` or `logging`
-8. **ALWAYS run `make fmt`** before committing code
-9. **ALWAYS handle exceptions** in routes with try-except and map to HTTP status codes
-10. **ALWAYS use `from None`** when re-raising exceptions to suppress chain
-
-## Environment Variables
-
-In `.env` (see `env.example`): `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `HASHIDS_SALT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-
-## Health Check
-
+### Running the Application
+To start the development server with hot reload:
 ```bash
-curl http://localhost:8000/api/health  # {"message": "ok"}
+poetry run uvicorn app.main:app --reload
 ```
+The API will be available at `http://localhost:8000`.
+Docs are at `http://localhost:8000/docs`.
+
+### Code Quality
+Run the following command to format and lint code:
+```bash
+make fmt
+```
+(This runs `black` and `ruff` on the `app/` directory).
+
+### Testing
+*   **Status:** Test infrastructure is currently not set up.
+*   **Goal:** Implement `pytest` for unit and integration tests.
+
+## 6. Common Tasks for Agents
+
+*   **Adding a New Feature:**
+    1.  Define the **SQLAlchemy Model** in `app/db/models/`.
+    2.  Generate a **Migration** (`alembic revision --autogenerate -m "add feature"`).
+    3.  Create a **Service** in `app/services/` to handle logic.
+    4.  Create a **Pydantic Schema** (DTO) for request/response.
+    5.  Create an **API Route** in `app/apis/v1/`.
+    6.  Register the router in `app/apis/base.py` (or `v1/base.py`).
+
+*   **Modifying Database Schema:**
+    *   Always use Alembic migrations. Never modify the database schema manually.
+
+*   **Error Handling:**
+    *   Raise custom exceptions in the Service layer.
+    *   Catch them in the API layer and re-raise as `BaseAPIException` or use the global exception handler.
