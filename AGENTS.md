@@ -1,129 +1,160 @@
-# Pragya API (Task Tracker) - Developer & Agent Guide
+# Pragya API - Agent & Developer Guide
 
-This document serves as a comprehensive guide for developers and AI agents working on the Pragya API codebase. It outlines the project structure, architectural patterns, technology stack, and operational workflows.
+## Build / Run / Lint / Test Commands
 
-## 1. Project Overview
+```bash
+# Install dependencies
+poetry install
 
-**Name:** Pragya API
-**Purpose:** Backend API for a Task Tracker application.
-**Status:** In active development (User Management implemented; Task Management pending).
+# Start database (PostgreSQL + pgAdmin)
+docker-compose up -d
 
-## 2. Tech Stack
+# Run database migrations (run from repo root; alembic.ini is in app/)
+alembic -c app/alembic.ini upgrade head
 
-*   **Language:** Python 3.10+
-*   **Web Framework:** **FastAPI** (Async)
-*   **Database:** **PostgreSQL**
-*   **ORM:** **SQLAlchemy** (Async)
-*   **Database Driver:** **AsyncPG**
-*   **Migrations:** **Alembic**
-*   **Validation:** **Pydantic**
-*   **Authentication:** **PyJWT** (JWT), **Passlib** (Hashing)
-*   **Logging:** **Structlog** (JSON structured logs)
-*   **Dependency Management:** **Poetry**
-*   **Linting/Formatting:** **Black**, **Ruff**, **Isort**
+# Generate a new migration after model changes
+alembic -c app/alembic.ini revision --autogenerate -m "description"
 
-## 3. Project Structure
+# Start dev server (from repo root)
+poetry run uvicorn app.main:app --reload
 
-The project follows a modular structure within the `app/` directory:
+# Format & lint (always run before committing)
+make fmt                     # runs: black app && ruff check app --fix
+
+# Format only
+black app
+
+# Lint only (with autofix)
+ruff check app --fix
+
+# Lint without autofix (check mode)
+ruff check app
+
+# Tests — not yet configured. When added, the convention will be:
+# pytest                           # run all tests
+# pytest tests/test_user.py        # run a single test file
+# pytest tests/test_user.py::test_signup -v   # run a single test function
+```
+
+## Project Structure
 
 ```
 app/
-├── apis/               # API Layer (Controllers/Routes)
-│   ├── base.py         # Main router configuration
-│   ├── exceptions.py   # Global exception handling logic
-│   ├── response.py     # Standardized API response format (ResponseEntity)
-│   └── v1/             # Version 1 endpoints
-│       └── user.py     # User-related routes (signup, signin, me)
-├── core/               # Core configuration & utilities
-│   ├── config.py       # Pydantic Settings (env vars)
-│   ├── logging.py      # Structlog setup
-│   ├── security.py     # Auth utilities (password hashing, JWT)
-│   └── middlewares.py  # Request logging, ID tracking
-├── db/                 # Database Layer
-│   ├── base.py         # DB connection & session management
-│   └── models/         # SQLAlchemy models (User, Task, etc.)
-├── services/           # Service Layer (Business Logic)
-│   └── user.py         # User management logic (CRUD, Auth)
-├── migrations/         # Alembic migration scripts
-└── main.py             # Application entry point
+├── main.py                  # FastAPI app entry point, exception handlers, middleware
+├── apis/                    # API layer — routes, response format, HTTP exceptions
+│   ├── base.py              # Root /api router, health check
+│   ├── exceptions.py        # BaseAPIException, UnauthorizedException
+│   ├── response.py          # ResponseEntity[T] generic response wrapper
+│   └── v1/
+│       ├── base.py          # /api/v1 sub-router, mounts feature routers
+│       └── user.py          # User endpoints (signup, signin, me, signout)
+├── core/                    # Cross-cutting utilities
+│   ├── config.py            # Pydantic Settings (reads .env)
+│   ├── exceptions.py        # BaseException (project-wide base)
+│   ├── hash_ids.py          # HashId type (int ↔ obfuscated string in API)
+│   ├── jwt.py               # JWT encode/decode helper class
+│   ├── logging.py           # Structlog setup, request_id context var
+│   ├── middlewares.py       # RequestIDMiddleware, RequestLoggingMiddleware
+│   └── security.py          # Password hashing (passlib bcrypt_sha256)
+├── db/
+│   ├── base.py              # Async engine, session factory, get_db dependency
+│   └── models/              # SQLAlchemy ORM models
+│       ├── base.py          # BaseModel, CreateModel, UpdateModel, DeleteModel mixins
+│       ├── user.py          # User, AuthToken
+│       ├── vision.py        # Vision (identity anchor)
+│       ├── theme.py         # Theme (life domain)
+│       ├── track.py         # Track (skill/focus area)
+│       ├── goal.py          # Goal (outcome-oriented)
+│       ├── phase.py         # Phase (time-boxed)
+│       ├── daily_commitment.py
+│       └── execution_log.py
+├── services/                # Business logic layer
+│   ├── base.py              # BaseService(db), BaseEntity(BaseModel)
+│   └── user.py              # UserService + Pydantic DTOs + get_current_user_id
+└── migrations/              # Alembic migration versions
 ```
 
-## 4. Key Architectural Patterns
+## Code Style Guidelines
 
-### Service-Repository Pattern
-*   **API Layer (`app/apis/`)**: Handles HTTP requests, validation (Pydantic), and response formatting. It delegates business logic to the Service Layer.
-*   **Service Layer (`app/services/`)**: Contains all business logic. It interacts directly with the database using SQLAlchemy sessions.
-    *   **Dependency Injection**: Services are injected into API routes using FastAPI's `Depends`.
-    *   **Transactional**: Service methods typically handle transaction commit/rollback (implicit via `AsyncSession` context or explicit management).
+### Formatter & Linter Config
+- **Black**: line length 88, target Python 3.10
+- **Ruff**: rules E, F, W, C, B, RUF, I; line length 88; E501 ignored (Black handles it)
+- **Isort**: profile "black", trailing commas, `app` as known first-party
+- Migrations directory is excluded from all linters
 
-### Database Access
-*   **Async SQLAlchemy**: All database operations are asynchronous.
-*   **Session Management**: A database session is provided via dependency injection (`get_db`) to routes and passed down to services.
+### Import Order (enforced by isort + ruff I)
+1. Standard library (`datetime`, `typing`, `uuid`, etc.)
+2. Third-party (`fastapi`, `sqlalchemy`, `structlog`, `pydantic`, etc.)
+3. First-party (`app.core.*`, `app.db.*`, `app.apis.*`, `app.services.*`)
 
-### Authentication
-*   **JWT**: Stateless authentication using JSON Web Tokens.
-*   **Current User**: A dependency `get_current_user` extracts the user from the token.
+Separate each group with a blank line. Use absolute imports from `app.*` — never relative imports.
 
-### Standardized Response
-*   All API responses are wrapped in a generic `ResponseEntity` class to ensure a consistent JSON structure (e.g., `{ "code": 200, "message": "Success", "data": ... }`).
+### Type Annotations
+- Use `Annotated[Type, Depends(...)]` for FastAPI dependency injection parameters.
+- Use Pydantic `BaseModel` subclasses for request/response schemas (called "Entities" here: `UserSignUpEntity`, `UserEntity`, etc.).
+- Use `str | None` union syntax (Python 3.10+), not `Optional[str]`.
+- SQLAlchemy models use `Mapped[T]` with `mapped_column()` for newer models (vision, theme, track, goal, phase) and legacy `Column()` style for older ones (user). Prefer `Mapped` + `mapped_column` for new code.
+
+### Naming Conventions
+- **Files**: `snake_case.py`
+- **Classes**: `PascalCase` — `UserService`, `BaseAPIException`, `ResponseEntity`
+- **Functions/methods**: `snake_case` — `get_user`, `create_auth_token`
+- **Route functions**: `snake_case` matching the action — `signup`, `signin`, `me`
+- **Constants**: `UPPER_SNAKE_CASE` (in config: `JWT_SECRET`, `DATABASE_URL`)
+- **Pydantic DTOs**: suffix `Entity` — `UserSignUpEntity`, `UserTokenEntity`
+- **Service classes**: suffix `Service` — `UserService`
+- **Exception classes**: nested inside their Service class — `UserService.UserNotFoundException`
+- **SQLAlchemy models**: singular PascalCase matching table name — `User`, `AuthToken`, `Vision`
+- **Table names**: singular snake_case — `user`, `auth_token`, `vision`
+
+### Error Handling Pattern
+1. Define custom exceptions as **nested classes** inside the relevant Service, inheriting from a base service exception:
+   ```python
+   class UserService(BaseService):
+       class UserException(BaseException):
+           message = "User Exception"
+       class UserNotFoundException(UserException):
+           message = "User Not Found"
+   ```
+2. **Raise** exceptions in the service layer with a descriptive `message`.
+3. **Catch** service exceptions in the API route and re-raise as `BaseAPIException` with the appropriate HTTP status code:
+   ```python
+   except UserService.UserNotFoundException as e:
+       raise BaseAPIException(message=str(e.message), status_code=status.HTTP_404_NOT_FOUND) from None
+   ```
+4. Use `from None` to suppress exception chaining in API handlers.
+
+### Response Format
+All endpoints return `ResponseEntity[T]` — a generic Pydantic model:
+```json
+{"code": 200, "message": "", "data": { ... }, "error": null}
+```
+
+### Authentication Flow
+- JWT tokens encode `{"sub": {"auth_token": "<random_string>"}}`.
+- `get_current_user_id` dependency extracts the bearer token, decodes JWT, looks up `AuthToken` in DB, and returns `user_id: int`.
+- Use `HashId` (in `core/hash_ids.py`) to obfuscate integer IDs in API responses.
 
 ### Logging
-*   **Structlog**: Used for structured, context-rich logging.
-*   **Request ID**: A unique ID is generated for each request and included in logs for traceability.
+- Use `structlog.get_logger(__name__)` at module level.
+- Log key events: `logger.info("action_name", key=value)`.
+- Request ID is automatically injected via middleware.
 
-## 5. Development Workflow
+### Database Conventions
+- All DB operations are **async** (`await db.execute(...)`, `await db.commit()`).
+- Sessions come from `get_db` dependency injection — never create sessions manually.
+- Use `select()`, `delete()` from `sqlalchemy` — not legacy `Query` API.
+- New models must inherit from `CreateUpdateDeleteModel` (provides `created_at`, `updated_at`, `deleted_at` + creator/updater/deleter FK fields).
+- Soft-delete: filter with `Model.deleted_at.is_(None)` for active records.
+- Always create Alembic migrations — never modify schema manually.
 
-### Prerequisites
-*   Python 3.10+
-*   Poetry
-*   Docker & Docker Compose (for database)
+## Adding a New Feature (Checklist)
 
-### Setup
-1.  **Install Dependencies:**
-    ```bash
-    poetry install
-    ```
-2.  **Start Database:**
-    ```bash
-    docker-compose up -d
-    ```
-3.  **Run Migrations:**
-    ```bash
-    alembic upgrade head
-    ```
-
-### Running the Application
-To start the development server with hot reload:
-```bash
-poetry run uvicorn app.main:app --reload
-```
-The API will be available at `http://localhost:8000`.
-Docs are at `http://localhost:8000/docs`.
-
-### Code Quality
-Run the following command to format and lint code:
-```bash
-make fmt
-```
-(This runs `black` and `ruff` on the `app/` directory).
-
-### Testing
-*   **Status:** Test infrastructure is currently not set up.
-*   **Goal:** Implement `pytest` for unit and integration tests.
-
-## 6. Common Tasks for Agents
-
-*   **Adding a New Feature:**
-    1.  Define the **SQLAlchemy Model** in `app/db/models/`.
-    2.  Generate a **Migration** (`alembic revision --autogenerate -m "add feature"`).
-    3.  Create a **Service** in `app/services/` to handle logic.
-    4.  Create a **Pydantic Schema** (DTO) for request/response.
-    5.  Create an **API Route** in `app/apis/v1/`.
-    6.  Register the router in `app/apis/base.py` (or `v1/base.py`).
-
-*   **Modifying Database Schema:**
-    *   Always use Alembic migrations. Never modify the database schema manually.
-
-*   **Error Handling:**
-    *   Raise custom exceptions in the Service layer.
-    *   Catch them in the API layer and re-raise as `BaseAPIException` or use the global exception handler.
+1. Define SQLAlchemy model in `app/db/models/` (inherit `CreateUpdateDeleteModel`)
+2. Register model in `app/db/models/__init__.py` with explicit re-export
+3. Generate migration: `alembic -c app/alembic.ini revision --autogenerate -m "add <feature>"`
+4. Create Pydantic DTOs (Entities) in the service file
+5. Create Service class in `app/services/` extending `BaseService`
+6. Create API routes in `app/apis/v1/<feature>.py`
+7. Register router in `app/apis/v1/base.py`
+8. Run `make fmt` before committing
