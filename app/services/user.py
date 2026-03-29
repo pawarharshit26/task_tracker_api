@@ -13,7 +13,7 @@ from app.apis.exceptions import UnauthorizedException
 from app.core.config import settings
 from app.core.exceptions import BaseException
 from app.core.hash_ids import HashId
-from app.core.jwt import JWT, get_jwt
+from app.core.jwt import JWTService, get_jwt_service
 from app.core.security import get_hash, verify_hash
 from app.db.base import get_db
 from app.db.models.user import AuthToken, User
@@ -168,7 +168,7 @@ class UserService(BaseService):
         return secrets.token_urlsafe(64)
 
     def _encode_jwt(self, user: User, auth_token: AuthToken) -> str:
-        return get_jwt().encode(subject={"auth_token": auth_token.token})
+        return get_jwt_service().encode(subject={"auth_token": auth_token.token})
 
 
 def get_user_service(
@@ -182,15 +182,15 @@ async def get_current_user_id(
         HTTPAuthorizationCredentials, Depends(HTTPBearer(auto_error=False))
     ],
     db: Annotated[AsyncSession, Depends(get_db)],
-    jwt: Annotated[JWT, Depends(get_jwt)],
+    jwt_service: Annotated[JWTService, Depends(get_jwt_service)],
 ) -> int:
     logger.info("Getting current user id")
     if not credentials:
         raise UnauthorizedException()
 
     try:
-        payload = jwt.decode(credentials.credentials)
-    except JWT.JWTException as e:
+        payload = jwt_service.decode(credentials.credentials)
+    except JWTService.JWTException as e:
         raise UnauthorizedException() from e
 
     logger.info("Decoded payload", payload=payload)

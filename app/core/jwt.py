@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.exceptions import BaseException
 
 
-class JWT:
+class JWTService:
     class JWTException(BaseException):
         pass
 
@@ -109,5 +109,5 @@ class JWT:
             return True
 
 
-def get_jwt():
-    return JWT()
+def get_jwt_service():
+    return JWTService()
