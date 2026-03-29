@@ -1,52 +1,45 @@
 #!/bin/bash
 
-# setup.sh - Environment setup script for pragya_api
+# setup.sh - Environment setup script for pragya_api (uv version)
 
 # Exit on error
 set -e
 
 echo "----------------------------------------"
-echo "🚀 Repository Setup Started"
+echo "🚀 Repository Setup Started (using uv)"
 echo "----------------------------------------"
 
-# 1. Create virtual environment venv
-if [ ! -d "venv" ]; then
-    echo "📦 Creating virtual environment 'venv'..."
-    python3 -m venv venv
-else
-    echo "ℹ️  Virtual environment 'venv' already exists."
+# 1. Ensure uv is installed on the system
+if ! command -v uv &> /dev/null; then
+    echo "❌ 'uv' not found. Please install it first:"
+    echo "curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
 fi
 
-# 2. Install poetry in the virtual environment
-echo "🛠️  Updating pip and installing poetry in venv..."
-./venv/bin/pip install --upgrade pip
-./venv/bin/pip install poetry
+# 2. Sync the environment
+# This creates the .venv, installs Python, and all dependencies in one go.
+# It's much faster and more reliable than manual venv creation.
+echo "📥 Syncing project dependencies and Python version..."
+uv sync
 
-# 3. Run poetry install
-echo "📥 Installing project dependencies..."
-# Activation ensures poetry uses the venv we just created/updated
-source venv/bin/activate
-poetry install
+# 3. Setup pre-commit
+echo "🧹 Setting up pre-commit hooks..."
 
-# 4. Setup precommit formatting and run make fmt
-echo "🧹 Setting up formatting..."
-# Ensure pre-commit is installed
-pip install pre-commit
-
-# If there's a pre-commit config, install the hooks
+# We use 'uv run' to execute pre-commit without manually activating the venv
 if [ -f ".pre-commit-config.yaml" ]; then
     echo "🪝  Installing pre-commit hooks..."
-    pre-commit install
+    uv run pre-commit install
 else
     echo "⚠️  No .pre-commit-config.yaml found, skipping hook installation."
 fi
 
-# Run the formatting command as requested
+# 4. Run formatting
 echo "✨ Running 'make fmt'..."
-make fmt
+# 'uv run' automatically uses the .venv created by 'uv sync'
+uv run make fmt
 
 echo "----------------------------------------"
 echo "✅ Setup Complete!"
-echo "To activate the environment, run:"
-echo "source venv/bin/activate"
+echo "To run your API, you can use: uv run uvicorn app.main:app"
+echo "Or activate the environment: source .venv/bin/activate"
 echo "----------------------------------------"
