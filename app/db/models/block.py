@@ -1,3 +1,5 @@
+from typing import Literal
+
 from sqlalchemy import JSON, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,7 +28,7 @@ class Block(CreateUpdateDeleteModel):
 
     __tablename__ = "block"
 
-    owner_type: Mapped[str] = mapped_column(
+    owner_type: Mapped[Literal["goal", "phase", "execution_log"]] = mapped_column(
         String,
         nullable=False,
         doc="Discriminator: 'goal' | 'phase' | 'execution_log'",
