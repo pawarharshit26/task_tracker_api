@@ -73,7 +73,7 @@ All domain models inherit `CreateUpdateDeleteModel`, which provides:
 - `updated_at / updater_id / updater`
 - `deleted_at / deleter_id / deleter` (soft delete)
 
-Filter active records with `Model.deleted_at.is_(None)`.
+Filter active records with `Model.deleted_at.is_(None)`. The `creator_id`, `updater_id`, `deleter_id` fields are **not auto-populated** — set them explicitly in service methods using the authenticated `user_id`.
 
 ### Exception Pattern
 1. Define nested exception classes inside the Service:
@@ -98,8 +98,32 @@ Filter active records with `Model.deleted_at.is_(None)`.
 - Model mixins: `app/db/models/base.py`
 - Auth dependency: `app/services/user.py` → `get_current_user_id`
 - Response wrapper: `app/apis/response.py`
+- Router registration: `app/apis/v1/base.py` — add new routers here
 
 ### Tech Stack
 FastAPI + SQLAlchemy 2.0 async + AsyncPG + PostgreSQL + Pydantic v2 + PyJWT + structlog + Hashids + Alembic
 
 Use `select()` / `delete()` (SQLAlchemy 2.0 style), not the legacy Query API. Use `Mapped[T]` + `mapped_column()` for new models (not `Column()`).
+
+## Domain Model Semantics
+
+All models are defined; only **User** has a service and API. The rest need to be built following the same pattern.
+
+| Model | Constraint / Intent |
+|-------|---------------------|
+| `Vision` | Identity anchor. One active per user (`user_id` is unique). Rarely changes. |
+| `Theme` | Life domain (Health, Career, etc.). 3–6 active per Vision max. |
+| `Track` | Skill/focus area within a Theme (e.g. "Backend Engineering"). Can be paused. |
+| `Goal` | Outcome direction for a Track. Multiple per Track, few active at once. |
+| `Phase` | Time-boxed focus (with `start_date` / `end_date`). **Only 1 active Phase per Goal**. |
+| `DailyCommitment` | Intent set at day start. Belongs to one Phase. Can be skipped but must be logged. |
+| `ExecutionLog` | What actually happened. 1-to-1 with `DailyCommitment` (`commitment_id` is unique). Has `actual_output` + `reflection` text fields. |
+
+## Adding a New Feature (Pattern)
+
+Follow `app/services/user.py` + `app/apis/v1/user.py` as the reference implementation:
+
+1. **Service** (`app/services/<entity>.py`): subclass `BaseService`, define inner exception classes, implement async methods, expose `get_<entity>_service(db) -> <Entity>Service` factory.
+2. **Router** (`app/apis/v1/<entity>.py`): `APIRouter`, inject service via `Depends(get_<entity>_service)` and user via `Depends(get_current_user_id)`, map service exceptions to `BaseAPIException`.
+3. **Register**: add router in `app/apis/v1/base.py`.
+4. **Migration**: run `alembic revision --autogenerate` if models changed.

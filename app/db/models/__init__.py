@@ -1,3 +1,4 @@
+from app.db.models.block import Block as Block
 from app.db.models.daily_commitment import DailyCommitment as DailyCommitment
 from app.db.models.execution_log import ExecutionLog as ExecutionLog
 from app.db.models.goal import Goal as Goal
