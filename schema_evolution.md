@@ -95,3 +95,32 @@ class DailyReflection(Base):
 
 ## Out of Scope (Discussion Only)
 User explicitly stated: not implementing now, just discussing. No code, migrations, or services to be generated from this doc. This file is a decisions ledger for when implementation resumes.
+
+## Status — Schema Applied (2026-04-30)
+
+Models edited and a single fresh **initial** Alembic migration generated and applied. Prior two migrations
+(`166799f70db9_initial`, `746c29dbfce6_created_schema_vision_tracker`) were deleted; the DB was
+nuked (`DROP SCHEMA public CASCADE`) and rebuilt from one autogen run so migration history matches
+current model state with zero historical churn.
+
+- Migration: `app/migrations/versions/ae1fac635ff8_initial.py` (down_revision = `None`)
+- Postgres types created: `phase_lifecycle`, `mood`
+- Tables: `user`, `auth_token`, `vision`, `theme`, `track`, `goal`, `phase`, `daily_commitment`,
+  `execution_log`, `daily_reflection`, `block`
+- Partial unique index: `ix_phase_one_active_per_goal` on
+  `phase(goal_id) WHERE lifecycle = 'ACTIVE'::phase_lifecycle`
+- Check constraint: `ck_execution_log_energy_level_range` (`energy_level` NULL or 1–5)
+- Unique constraint: `uq_daily_reflection_user_date` on `daily_reflection(user_id, date)`
+- `block` polymorphic owner_type Literal: `goal | phase | execution_log | daily_reflection`
+
+Implementation notes:
+- `DailyCommitment.expected_minutes` added (implicit prerequisite for MVE formula
+  `max(5, round(expected_minutes / 3))`).
+- Enum columns sit inside `create_table(...)`, so SQLAlchemy auto-issues `CREATE TYPE` —
+  no need to pre-create types via `Enum.create()`. (That manual pre-create was only needed earlier
+  when `add_column` was used on an existing table; gone in this single-migration approach.)
+- `CheckConstraint` is captured by autogen because it's part of a fresh `create_table`. Alembic's
+  known limitation only applies to detecting check constraints added to *existing* tables.
+- Migration is replay-safe: `alembic downgrade base && alembic upgrade head` reproduces full state.
+
+Next: build services + APIs per `CLAUDE.md` "Adding a New Feature" pattern.

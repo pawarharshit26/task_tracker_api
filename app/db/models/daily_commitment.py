@@ -31,6 +31,16 @@ class DailyCommitment(CreateUpdateDeleteModel):
 
     commitment_date: Mapped[Date] = mapped_column(Date, nullable=False)
     intent: Mapped[str] = mapped_column(String, nullable=False)
+    expected_minutes: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Planned minutes for this commitment.",
+    )
+    mve_minutes: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Minimum Viable Effort (frozen at write time): max(5, round(expected_minutes / 3)).",
+    )
 
     execution_log = relationship(
         "ExecutionLog", uselist=False, back_populates="commitment"

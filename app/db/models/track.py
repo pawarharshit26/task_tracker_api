@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
@@ -34,6 +36,23 @@ class Track(CreateUpdateDeleteModel):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    cadence_per_week: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Target sessions per week (1-7; 7 = daily). Null = no target.",
+    )
+    is_paused: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="True = excluded from suggestions and cadence checks; data retained.",
+    )
+    paused_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        doc="When the track was last paused. Null when active.",
+    )
 
     goals: Mapped[list] = relationship(
         "Goal", back_populates="track", foreign_keys="[Goal.track_id]"

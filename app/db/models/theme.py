@@ -33,6 +33,11 @@ class Theme(CreateUpdateDeleteModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    preset_key: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        doc="Opaque visual key (e.g. 'career', 'health'). Frontend resolves to glyph + color.",
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     tracks: Mapped[list] = relationship(

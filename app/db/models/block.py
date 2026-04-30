@@ -11,9 +11,10 @@ class Block(CreateUpdateDeleteModel):
     Polymorphic content block for Notion-like editor.
 
     Attaches to:
-        - Goal          (owner_type="goal")
-        - Phase         (owner_type="phase")
-        - ExecutionLog  (owner_type="execution_log")
+        - Goal             (owner_type="goal")
+        - Phase            (owner_type="phase")
+        - ExecutionLog     (owner_type="execution_log")
+        - DailyReflection  (owner_type="daily_reflection")
 
     Block types and their content shapes:
         paragraph   {"text": str}
@@ -28,10 +29,12 @@ class Block(CreateUpdateDeleteModel):
 
     __tablename__ = "block"
 
-    owner_type: Mapped[Literal["goal", "phase", "execution_log"]] = mapped_column(
+    owner_type: Mapped[
+        Literal["goal", "phase", "execution_log", "daily_reflection"]
+    ] = mapped_column(
         String,
         nullable=False,
-        doc="Discriminator: 'goal' | 'phase' | 'execution_log'",
+        doc="Discriminator: 'goal' | 'phase' | 'execution_log' | 'daily_reflection'",
     )
     owner_id: Mapped[int] = mapped_column(
         Integer,
