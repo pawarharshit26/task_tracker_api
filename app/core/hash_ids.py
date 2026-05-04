@@ -55,9 +55,8 @@ class HashId(int):
         def serialize(value: int) -> str:
             return encode(value)
 
-        return core_schema.no_info_after_validator_function(
+        return core_schema.no_info_plain_validator_function(
             validate,
-            core_schema.int_schema(),
             serialization=core_schema.plain_serializer_function_ser_schema(
                 function=serialize
             ),
