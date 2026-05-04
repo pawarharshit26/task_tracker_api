@@ -156,6 +156,7 @@ Pydantic models shared across all layers. No ORM types, no DB knowledge.
 - Per-domain files: `app/entities/<domain>.py`
 - Input entities: `CreateXEntity`, `UpdateXEntity`, `SignInEntity`
 - Output entities: `XEntity` (public fields only — no passwords, no raw IDs)
+- `BreadcrumbEntity` (`app/entities/breadcrumb.py`) — shared cross-domain entity: `{ theme_preset_key, theme_name, track_name }`. Embedded in `GoalDetailEntity` and `TodayItemEntity` so consumers can display theme/track labels without extra queries.
 
 ## Repositories (`app/repositories/`)
 
@@ -166,6 +167,32 @@ Own all ORM construction and SQL. Return entities, never ORM objects.
 - Per-domain files: `app/repositories/<domain>.py`
 - Mapper functions (`_to_x_entity`) are module-private
 
+### Enriched multi-model queries
+
+When a method needs to return an entity plus breadcrumb data (theme/track labels), use `select(ModelA, ModelB, ModelC)` with the joins already required for ownership checks. Return a `NamedTuple` instead of a bare entity:
+
+```python
+class _GoalRow(NamedTuple):
+    goal: GoalEntity
+    breadcrumb: BreadcrumbEntity
+
+async def get_owned_with_breadcrumb(self, goal_id: int, user_id: int) -> _GoalRow | None:
+    result = await self.db.execute(
+        select(Goal, Track, Theme)
+        .join(Track, Goal.track_id == Track.id)
+        .join(Theme, Track.theme_id == Theme.id)
+        .join(Vision, Theme.vision_id == Vision.id)
+        .where(Vision.user_id == user_id, Goal.id == goal_id, ...)
+    )
+    row = result.first()
+    if not row:
+        return None
+    goal, track, theme = row
+    return _GoalRow(goal=_to_entity(goal), breadcrumb=BreadcrumbEntity(...))
+```
+
+`CommitmentRepository.list_by_date` uses the same pattern with `_CommitmentRow`.
+
 ## Domain Model Semantics
 
 | Model | Constraint / Intent |
@@ -173,9 +200,9 @@ Own all ORM construction and SQL. Return entities, never ORM objects.
 | `Vision` | Identity anchor. One per user (`user_id` unique). Rarely changes. |
 | `Theme` | Life domain. 3–6 active per Vision. Has `preset_key` (resolved to glyph+color frontend-side). |
 | `Track` | Focus area within Theme. Has `cadence_per_week`, `is_paused`. |
-| `Goal` | Outcome direction. Has `horizon: str | None`. No description (→ blocks Phase 3). |
+| `Goal` | Outcome direction. Has `horizon: str | None`. No description (→ blocks Phase 3). `GoalDetailEntity` includes phases list + `BreadcrumbEntity`. |
 | `Phase` | Time-boxed focus. `lifecycle` enum (draft/active/paused/complete/abandoned). **Only 1 active per goal** (partial unique index). |
-| `DailyCommitment` | Day intent. `mve_minutes = max(5, round(expected_minutes / 3))` — frozen at write time. |
+| `DailyCommitment` | Day intent. `mve_minutes = max(5, round(expected_minutes / 3))` — frozen at write time. `TodayItemEntity` includes commitment + log + `BreadcrumbEntity`. |
 | `ExecutionLog` | Actual result. 1-to-1 with `DailyCommitment`. `energy_level` 1–5 (DB check constraint). |
 | `DailyReflection` | Day-level mood. Unique on `(user_id, date)`. |
 | `Block` | Polymorphic rich content. `owner_type` ∈ `{goal, phase, execution_log, daily_reflection}`. |

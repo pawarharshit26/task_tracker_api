@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import NamedTuple
 
 from sqlalchemy import select
 
@@ -6,12 +7,18 @@ from app.db.models.goal import Goal
 from app.db.models.theme import Theme
 from app.db.models.track import Track
 from app.db.models.vision import Vision
+from app.entities.breadcrumb import BreadcrumbEntity
 from app.entities.goal import GoalEntity
 from app.repositories.base import BaseRepository
 
 
 def _to_entity(g: Goal) -> GoalEntity:
     return GoalEntity(id=g.id, track_id=g.track_id, title=g.title, horizon=g.horizon)
+
+
+class _GoalRow(NamedTuple):
+    goal: GoalEntity
+    breadcrumb: BreadcrumbEntity
 
 
 class GoalRepository(BaseRepository):
@@ -43,6 +50,36 @@ class GoalRepository(BaseRepository):
         )
         g = result.scalar_one_or_none()
         return _to_entity(g) if g else None
+
+    async def get_owned_with_breadcrumb(
+        self, goal_id: int, user_id: int
+    ) -> _GoalRow | None:
+        result = await self.db.execute(
+            select(Goal, Track, Theme)
+            .join(Track, Goal.track_id == Track.id)
+            .join(Theme, Track.theme_id == Theme.id)
+            .join(Vision, Theme.vision_id == Vision.id)
+            .where(
+                Vision.user_id == user_id,
+                Goal.id == goal_id,
+                Vision.deleted_at.is_(None),
+                Theme.deleted_at.is_(None),
+                Track.deleted_at.is_(None),
+                Goal.deleted_at.is_(None),
+            )
+        )
+        row = result.first()
+        if not row:
+            return None
+        goal, track, theme = row
+        return _GoalRow(
+            goal=_to_entity(goal),
+            breadcrumb=BreadcrumbEntity(
+                theme_preset_key=theme.preset_key,
+                theme_name=theme.name,
+                track_name=track.name,
+            ),
+        )
 
     async def create(
         self,

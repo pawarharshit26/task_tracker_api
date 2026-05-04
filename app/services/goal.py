@@ -17,8 +17,47 @@ class GoalService(BaseService):
         return await self.goal_repo.list(user_id=user_id)
 
     async def get_detail(self, user_id: int, goal_id: int) -> GoalDetailEntity:
+        row = await self.goal_repo.get_owned_with_breadcrumb(
+            goal_id=goal_id, user_id=user_id
+        )
+        if not row:
+            raise self.GoalNotFoundException()
+        phases = await self.phase_repo.list(user_id=user_id, goal_id=goal_id)
+        return GoalDetailEntity(goal=row.goal, phases=phases, breadcrumb=row.breadcrumb)
+
+    async def create(
+        self,
+        user_id: int,
+        track_id: int,
+        title: str,
+        horizon: str | None,
+    ) -> GoalEntity:
+        return await self.goal_repo.create(
+            track_id=track_id,
+            user_id=user_id,
+            title=title,
+            horizon=horizon,
+        )
+
+    async def update(
+        self,
+        user_id: int,
+        goal_id: int,
+        title: str | None,
+        horizon: str | None,
+    ) -> GoalEntity:
         goal = await self.goal_repo.get_owned(goal_id=goal_id, user_id=user_id)
         if not goal:
             raise self.GoalNotFoundException()
-        phases = await self.phase_repo.list(user_id=user_id, goal_id=goal_id)
-        return GoalDetailEntity(goal=goal, phases=phases)
+        return await self.goal_repo.update(
+            goal_id=goal_id,
+            user_id=user_id,
+            title=title,
+            horizon=horizon,
+        )
+
+    async def delete(self, user_id: int, goal_id: int) -> None:
+        goal = await self.goal_repo.get_owned(goal_id=goal_id, user_id=user_id)
+        if not goal:
+            raise self.GoalNotFoundException()
+        await self.goal_repo.delete(goal_id=goal_id, user_id=user_id)

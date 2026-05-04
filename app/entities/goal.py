@@ -1,5 +1,6 @@
 from app.core.hash_ids import HashId
 from app.entities.base import BaseEntity
+from app.entities.breadcrumb import BreadcrumbEntity
 from app.entities.phase import PhaseEntity
 
 
@@ -13,6 +14,7 @@ class GoalEntity(BaseEntity):
 class GoalDetailEntity(BaseEntity):
     goal: GoalEntity
     phases: list[PhaseEntity]
+    breadcrumb: BreadcrumbEntity
 
 
 class CreateGoalEntity(BaseEntity):

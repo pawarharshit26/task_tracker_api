@@ -36,7 +36,9 @@ class TrackRepository(BaseRepository):
             )
         )
 
-    async def list(self, user_id: int, theme_id: int | None = None) -> list[TrackEntity]:
+    async def list(
+        self, user_id: int, theme_id: int | None = None
+    ) -> list[TrackEntity]:
         q = self._base_query(user_id=user_id)
         if theme_id is not None:
             q = q.where(Track.theme_id == theme_id)
@@ -104,7 +106,9 @@ class TrackRepository(BaseRepository):
         await self.db.refresh(t)
         return _to_entity(t)
 
-    async def set_paused(self, track_id: int, user_id: int, paused: bool) -> TrackEntity:
+    async def set_paused(
+        self, track_id: int, user_id: int, paused: bool
+    ) -> TrackEntity:
         result = await self.db.execute(
             select(Track).where(Track.id == track_id, Track.deleted_at.is_(None))
         )

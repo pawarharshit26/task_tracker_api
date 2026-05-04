@@ -12,7 +12,9 @@ def _to_entity(r: DailyReflection) -> ReflectionEntity:
 
 
 class ReflectionRepository(BaseRepository):
-    async def get_by_date(self, user_id: int, for_date: date) -> ReflectionEntity | None:
+    async def get_by_date(
+        self, user_id: int, for_date: date
+    ) -> ReflectionEntity | None:
         result = await self.db.execute(
             select(DailyReflection).where(
                 DailyReflection.user_id == user_id,

@@ -8,7 +8,9 @@ from app.repositories.base import BaseRepository
 
 
 def _to_entity(v: Vision) -> VisionEntity:
-    return VisionEntity(id=v.id, title=v.title, description=v.description, is_active=v.is_active)
+    return VisionEntity(
+        id=v.id, title=v.title, description=v.description, is_active=v.is_active
+    )
 
 
 class VisionRepository(BaseRepository):

@@ -19,17 +19,21 @@ class TodayService(BaseService):
         self.reflection_repo = reflection_repo
 
     async def get(self, user_id: int, for_date: date) -> TodayEntity:
-        commitments = await self.commitment_repo.list_by_date(
+        rows = await self.commitment_repo.list_by_date(
             user_id=user_id, for_date=for_date
         )
-        commitment_ids = [int(c.id) for c in commitments]
+        commitment_ids = [int(row.commitment.id) for row in rows]
         logs = await self.log_repo.get_by_commitment_ids(commitment_ids=commitment_ids)
         reflection = await self.reflection_repo.get_by_date(
             user_id=user_id, for_date=for_date
         )
         items = [
-            TodayItemEntity(commitment=c, log=logs.get(int(c.id)))
-            for c in commitments
+            TodayItemEntity(
+                commitment=row.commitment,
+                log=logs.get(int(row.commitment.id)),
+                breadcrumb=row.breadcrumb,
+            )
+            for row in rows
         ]
         return TodayEntity(
             date=for_date,

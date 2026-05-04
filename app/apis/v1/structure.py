@@ -12,7 +12,9 @@ structure_router = APIRouter()
 
 @structure_router.get(path="/", response_model=ResponseEntity[StructureEntity])
 async def get_structure(
-    interactor: Annotated[GetStructureInteractor, Depends(get_get_structure_interactor)],
+    interactor: Annotated[
+        GetStructureInteractor, Depends(get_get_structure_interactor)
+    ],
     user_id: Annotated[int, Depends(get_current_user_id)],
 ):
     result = await interactor.execute(input=user_id)
