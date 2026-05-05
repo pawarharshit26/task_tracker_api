@@ -2,11 +2,13 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request
+from sqlalchemy import text
 
 from app.apis.base import router
 from app.apis.exceptions import BaseAPIException
 from app.core.logging import setup_logging
 from app.core.middlewares import RequestIDMiddleware, RequestLoggingMiddleware
+from app.db.base import AsyncSessionMaker
 
 logger = structlog.get_logger(__name__)
 
@@ -15,6 +17,14 @@ logger = structlog.get_logger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Task Tracker API")
+
+    try:
+        async with AsyncSessionMaker() as session:
+            await session.execute(statement=text("SELECT 1"))
+        logger.info("Database connection verified")
+    except Exception as e:
+        logger.error("Database connection failed", error=str(e))
+        raise RuntimeError("Cannot connect to database. Is PostgreSQL running?") from e
 
     yield  # Server is running
 
