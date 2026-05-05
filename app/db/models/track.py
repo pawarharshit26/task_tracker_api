@@ -34,7 +34,7 @@ class Track(CreateUpdateDeleteModel):
     theme = relationship("Theme", back_populates="tracks", foreign_keys=[theme_id])
 
     name: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     cadence_per_week: Mapped[int | None] = mapped_column(
