@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.core.exceptions import BaseException
 from app.entities.execution_log import ExecutionLogEntity
 from app.repositories.commitment import CommitmentRepository
@@ -8,6 +10,9 @@ from app.services.base import BaseService
 class ExecutionLogService(BaseService):
     class CommitmentNotFoundException(BaseException):
         message = "Commitment not found"
+
+    class LogNotEditableException(BaseException):
+        message = "Execution logs can only be edited for today's commitments"
 
     def __init__(
         self,
@@ -30,6 +35,8 @@ class ExecutionLogService(BaseService):
         )
         if not commitment:
             raise self.CommitmentNotFoundException()
+        if commitment.date != date.today():
+            raise self.LogNotEditableException()
         existing = await self.log_repo.get_by_commitment_id(commitment_id=commitment_id)
         if existing:
             return await self.log_repo.update(

@@ -128,4 +128,5 @@ class PhaseRepository(BaseRepository):
         p = result.scalar_one()
         p.deleted_at = datetime.utcnow()
         p.deleter_id = user_id
+        p.lifecycle = PhaseLifecycle.ABANDONED
         await self.db.commit()

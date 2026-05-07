@@ -41,3 +41,7 @@ async def upsert_log(
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_404_NOT_FOUND
         ) from e
+    except UpsertLogInteractor.LogNotEditableException as e:
+        raise BaseAPIException(
+            message=str(e.message), status_code=status.HTTP_403_FORBIDDEN
+        ) from e

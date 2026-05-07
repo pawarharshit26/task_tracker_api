@@ -72,6 +72,10 @@ async def update_phase(
         raise BaseAPIException(
             message=str(e.message), status_code=status.HTTP_404_NOT_FOUND
         ) from e
+    except UpdatePhaseInteractor.ActivePhaseAlreadyExistsException as e:
+        raise BaseAPIException(
+            message=str(e.message), status_code=status.HTTP_409_CONFLICT
+        ) from e
 
 
 @phase_router.delete(path="/{phase_id}", response_model=ResponseEntity[None])

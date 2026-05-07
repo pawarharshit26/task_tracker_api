@@ -1,5 +1,7 @@
 from datetime import date
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.exceptions import BaseException
 from app.db.models.phase import PhaseLifecycle
 from app.entities.phase import PhaseEntity
@@ -14,6 +16,9 @@ class PhaseService(BaseService):
 
     class GoalNotFoundException(BaseException):
         message = "Goal not found"
+
+    class ActivePhaseAlreadyExistsException(BaseException):
+        message = "Another phase is already active for this goal"
 
     def __init__(self, phase_repo: PhaseRepository, goal_repo: GoalRepository) -> None:
         self.phase_repo = phase_repo
@@ -55,15 +60,18 @@ class PhaseService(BaseService):
         phase = await self.phase_repo.get_owned(phase_id=phase_id, user_id=user_id)
         if not phase:
             raise self.PhaseNotFoundException()
-        return await self.phase_repo.update(
-            phase_id=phase_id,
-            user_id=user_id,
-            title=title,
-            start_date=start_date,
-            end_date=end_date,
-            lifecycle=lifecycle,
-            outcome=outcome,
-        )
+        try:
+            return await self.phase_repo.update(
+                phase_id=phase_id,
+                user_id=user_id,
+                title=title,
+                start_date=start_date,
+                end_date=end_date,
+                lifecycle=lifecycle,
+                outcome=outcome,
+            )
+        except IntegrityError as e:
+            raise self.ActivePhaseAlreadyExistsException() from e
 
     async def delete(self, user_id: int, phase_id: int) -> None:
         phase = await self.phase_repo.get_owned(phase_id=phase_id, user_id=user_id)

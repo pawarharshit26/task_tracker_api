@@ -16,6 +16,9 @@ class UpsertLogInteractor(BaseInteractor[UpsertLogInput, ExecutionLogEntity]):
     class CommitmentNotFoundException(BaseInteractor.InteractorException):
         message = "Commitment not found"
 
+    class LogNotEditableException(BaseInteractor.InteractorException):
+        message = "Execution logs can only be edited for today's commitments"
+
     def __init__(self, log_service: ExecutionLogService) -> None:
         self.log_service = log_service
 
@@ -30,3 +33,5 @@ class UpsertLogInteractor(BaseInteractor[UpsertLogInput, ExecutionLogEntity]):
             )
         except ExecutionLogService.CommitmentNotFoundException as e:
             raise self.CommitmentNotFoundException() from e
+        except ExecutionLogService.LogNotEditableException as e:
+            raise self.LogNotEditableException() from e

@@ -11,7 +11,6 @@ class ExecutionLogEntity(BaseEntity):
 
 
 class CreateExecutionLogEntity(BaseEntity):
-    commitment_id: HashId
     actual_minutes: int | None = None
     energy_level: int | None = None
     note: str | None = None

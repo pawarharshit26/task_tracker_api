@@ -9,6 +9,7 @@ class SignupInteractor(BaseInteractor[UserSignUpEntity, UserTokenEntity]):
 
     def __init__(self, user_service: UserService) -> None:
         self.user_service = user_service
+        # Inject JWT service here
 
     async def execute(self, input: UserSignUpEntity) -> UserTokenEntity:
         try:

@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Date, Enum, ForeignKey, Index, Integer, String
+from sqlalchemy import Date, Enum, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.models.base import CreateUpdateDeleteModel
@@ -62,6 +62,6 @@ class Phase(CreateUpdateDeleteModel):
             "ix_phase_one_active_per_goal",
             "goal_id",
             unique=True,
-            postgresql_where=(lifecycle == PhaseLifecycle.ACTIVE),
+            postgresql_where=text("lifecycle = 'ACTIVE' AND deleted_at IS NULL"),
         ),
     )

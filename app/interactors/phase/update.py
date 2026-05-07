@@ -21,6 +21,9 @@ class UpdatePhaseInteractor(BaseInteractor[UpdatePhaseInput, PhaseEntity]):
     class PhaseNotFoundException(BaseInteractor.InteractorException):
         message = "Phase not found"
 
+    class ActivePhaseAlreadyExistsException(BaseInteractor.InteractorException):
+        message = "Another phase is already active for this goal"
+
     def __init__(self, phase_service: PhaseService) -> None:
         self.phase_service = phase_service
 
@@ -37,3 +40,5 @@ class UpdatePhaseInteractor(BaseInteractor[UpdatePhaseInput, PhaseEntity]):
             )
         except PhaseService.PhaseNotFoundException as e:
             raise self.PhaseNotFoundException() from e
+        except PhaseService.ActivePhaseAlreadyExistsException as e:
+            raise self.ActivePhaseAlreadyExistsException() from e
