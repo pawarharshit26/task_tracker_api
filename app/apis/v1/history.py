@@ -10,7 +10,10 @@ from app.dependencies import (
     get_get_history_timeline_interactor,
 )
 from app.entities.history import HistoryEntity, HistoryTimelineEntity
-from app.interactors.history.get import GetHistoryTimelineInput, GetHistoryTimelineInteractor
+from app.interactors.history.get import (
+    GetHistoryTimelineInput,
+    GetHistoryTimelineInteractor,
+)
 from app.interactors.history.get_calendar import (
     GetHistoryCalendarInput,
     GetHistoryCalendarInteractor,
@@ -19,14 +22,16 @@ from app.interactors.history.get_calendar import (
 history_router = APIRouter()
 
 
-@history_router.get(path="/timeline", response_model=ResponseEntity[HistoryTimelineEntity])
+@history_router.get(
+    path="/timeline", response_model=ResponseEntity[HistoryTimelineEntity]
+)
 async def get_history_timeline(
     interactor: Annotated[
         GetHistoryTimelineInteractor, Depends(get_get_history_timeline_interactor)
     ],
     user_id: Annotated[int, Depends(get_current_user_id)],
-    before: date | None = Query(default=None),
-    limit: int = Query(default=14, ge=1, le=60),
+    before: Annotated[date | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=60)] = 14,
 ):
     if before is None:
         before = date.today() + timedelta(days=1)
@@ -42,8 +47,8 @@ async def get_history_calendar(
         GetHistoryCalendarInteractor, Depends(get_get_history_calendar_interactor)
     ],
     user_id: Annotated[int, Depends(get_current_user_id)],
-    year: int = Query(...),
-    month: int = Query(..., ge=1, le=12),
+    year: Annotated[int, Query()],
+    month: Annotated[int, Query(ge=1, le=12)],
 ):
     result = await interactor.execute(
         input=GetHistoryCalendarInput(user_id=user_id, year=year, month=month)

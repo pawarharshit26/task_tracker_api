@@ -61,9 +61,7 @@ class HistoryService(BaseService):
             next_cursor=from_date if history_days else None,
         )
 
-    async def get_calendar(
-        self, user_id: int, year: int, month: int
-    ) -> HistoryEntity:
+    async def get_calendar(self, user_id: int, year: int, month: int) -> HistoryEntity:
         from_date = date(year, month, 1)
         last_day = _calendar.monthrange(year, month)[1]
         to_date = date(year, month, last_day)
