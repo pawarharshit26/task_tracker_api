@@ -55,6 +55,16 @@ class ExecutionLogRepository(BaseRepository):
         await self.db.refresh(e)
         return _to_entity(e)
 
+    async def get(self, log_id: int) -> ExecutionLogEntity | None:
+        result = await self.db.execute(
+            select(ExecutionLog).where(
+                ExecutionLog.id == log_id,
+                ExecutionLog.deleted_at.is_(None),
+            )
+        )
+        e = result.scalar_one_or_none()
+        return _to_entity(e) if e else None
+
     async def get_by_commitment_id(
         self, commitment_id: int
     ) -> ExecutionLogEntity | None:

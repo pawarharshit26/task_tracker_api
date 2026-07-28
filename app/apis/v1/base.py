@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.apis.v1.block import block_router
 from app.apis.v1.commitment import commitment_router
 from app.apis.v1.execution_log import log_router
 from app.apis.v1.goal import goal_router
@@ -27,3 +28,4 @@ router.include_router(
 router.include_router(router=log_router, prefix="/log", tags=["ExecutionLog"])
 router.include_router(router=today_router, prefix="/today", tags=["Today"])
 router.include_router(router=history_router, prefix="/history", tags=["History"])
+router.include_router(router=block_router, prefix="/block", tags=["Block"])

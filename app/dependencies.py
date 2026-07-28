@@ -8,6 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apis.exceptions import UnauthorizedException
 from app.core.jwt import JWTService, get_jwt_service
 from app.db.base import get_db
+from app.interactors.block.create import CreateBlockInteractor
+from app.interactors.block.delete import DeleteBlockInteractor
+from app.interactors.block.list import ListBlocksInteractor
+from app.interactors.block.reorder import ReorderBlocksInteractor
+from app.interactors.block.update import UpdateBlockInteractor
 from app.interactors.commitment.create import CreateCommitmentInteractor
 from app.interactors.execution_log.upsert import UpsertLogInteractor
 from app.interactors.goal.create import CreateGoalInteractor
@@ -34,6 +39,7 @@ from app.interactors.user.signout import SignoutInteractor
 from app.interactors.user.signup import SignupInteractor
 from app.interactors.vision.get_active import GetActiveVisionInteractor
 from app.interactors.vision.upsert import UpsertVisionInteractor
+from app.repositories.block import BlockRepository
 from app.repositories.commitment import CommitmentRepository
 from app.repositories.execution_log import ExecutionLogRepository
 from app.repositories.goal import GoalRepository
@@ -43,6 +49,7 @@ from app.repositories.theme import ThemeRepository
 from app.repositories.track import TrackRepository
 from app.repositories.user import UserRepository
 from app.repositories.vision import VisionRepository
+from app.services.block import BlockService
 from app.services.commitment import CommitmentService
 from app.services.execution_log import ExecutionLogService
 from app.services.goal import GoalService
@@ -391,6 +398,63 @@ def get_get_history_calendar_interactor(
     service: Annotated[HistoryService, Depends(get_history_service)],
 ) -> GetHistoryCalendarInteractor:
     return GetHistoryCalendarInteractor(history_service=service)
+
+
+# --- Block ---
+
+
+def get_block_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BlockRepository:
+    return BlockRepository(db=db)
+
+
+def get_block_service(
+    block_repo: Annotated[BlockRepository, Depends(get_block_repository)],
+    goal_repo: Annotated[GoalRepository, Depends(get_goal_repository)],
+    phase_repo: Annotated[PhaseRepository, Depends(get_phase_repository)],
+    log_repo: Annotated[ExecutionLogRepository, Depends(get_execution_log_repository)],
+    commitment_repo: Annotated[
+        CommitmentRepository, Depends(get_commitment_repository)
+    ],
+) -> BlockService:
+    return BlockService(
+        block_repo=block_repo,
+        goal_repo=goal_repo,
+        phase_repo=phase_repo,
+        log_repo=log_repo,
+        commitment_repo=commitment_repo,
+    )
+
+
+def get_list_blocks_interactor(
+    service: Annotated[BlockService, Depends(get_block_service)],
+) -> ListBlocksInteractor:
+    return ListBlocksInteractor(block_service=service)
+
+
+def get_create_block_interactor(
+    service: Annotated[BlockService, Depends(get_block_service)],
+) -> CreateBlockInteractor:
+    return CreateBlockInteractor(block_service=service)
+
+
+def get_update_block_interactor(
+    service: Annotated[BlockService, Depends(get_block_service)],
+) -> UpdateBlockInteractor:
+    return UpdateBlockInteractor(block_service=service)
+
+
+def get_delete_block_interactor(
+    service: Annotated[BlockService, Depends(get_block_service)],
+) -> DeleteBlockInteractor:
+    return DeleteBlockInteractor(block_service=service)
+
+
+def get_reorder_blocks_interactor(
+    service: Annotated[BlockService, Depends(get_block_service)],
+) -> ReorderBlocksInteractor:
+    return ReorderBlocksInteractor(block_service=service)
 
 
 # --- Auth guard ---
